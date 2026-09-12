@@ -614,3 +614,284 @@ export async function claimAllQuestsInDb(): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Update Quest details in Supabase
+ */
+export async function updateQuestInDb(quest: CyberQuest): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) return false;
+
+    const { error } = await supabase
+      .from('quests')
+      .update({
+        title: quest.title,
+        description: quest.description,
+        difficulty: quest.difficulty,
+        attribute_type: quest.attributeType,
+        xp_reward: quest.xpReward,
+        gold_reward: quest.goldReward,
+        streak_bonus: quest.streakBonus,
+        time_string: quest.timeString,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', quest.id)
+      .eq('user_id', userId);
+
+    return !error;
+  } catch (err) {
+    console.warn('Supabase updateQuest error:', err);
+    return false;
+  }
+}
+
+/**
+ * Insert a new Habit in Supabase
+ */
+export async function insertHabitToDb(habit: HabitItem): Promise<string | null> {
+  if (!isSupabaseConfigured) return null;
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) return null;
+
+    const { data, error } = await supabase
+      .from('habits')
+      .insert({
+        user_id: userId,
+        title: habit.title,
+        notes: habit.notes,
+        is_positive: habit.isPositive,
+        is_negative: habit.isNegative,
+        positive_count: habit.positiveCount || 0,
+        negative_count: habit.negativeCount || 0,
+        difficulty: habit.difficulty,
+        attribute_type: habit.attributeType,
+      })
+      .select('id')
+      .single();
+
+    if (error || !data) return null;
+    return data.id;
+  } catch (err) {
+    console.warn('Supabase insertHabit error:', err);
+    return null;
+  }
+}
+
+/**
+ * Update Habit details in Supabase
+ */
+export async function updateHabitInDb(habit: HabitItem): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) return false;
+
+    const { error } = await supabase
+      .from('habits')
+      .update({
+        title: habit.title,
+        notes: habit.notes,
+        is_positive: habit.isPositive,
+        is_negative: habit.isNegative,
+        difficulty: habit.difficulty,
+        attribute_type: habit.attributeType,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', habit.id)
+      .eq('user_id', userId);
+
+    return !error;
+  } catch (err) {
+    console.warn('Supabase updateHabit error:', err);
+    return false;
+  }
+}
+
+/**
+ * Delete a Habit in Supabase
+ */
+export async function deleteHabitInDb(habitId: string): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) return false;
+
+    const { error } = await supabase
+      .from('habits')
+      .delete()
+      .eq('id', habitId)
+      .eq('user_id', userId);
+
+    return !error;
+  } catch (err) {
+    console.warn('Supabase deleteHabit error:', err);
+    return false;
+  }
+}
+
+/**
+ * Insert a new Daily in Supabase
+ */
+export async function insertDailyToDb(daily: DailyItem): Promise<string | null> {
+  if (!isSupabaseConfigured) return null;
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) return null;
+
+    const { data, error } = await supabase
+      .from('dailies')
+      .insert({
+        user_id: userId,
+        title: daily.title,
+        notes: daily.notes,
+        completed: false,
+        streak: 0,
+        difficulty: daily.difficulty,
+        attribute_type: daily.attributeType,
+      })
+      .select('id')
+      .single();
+
+    if (error || !data) return null;
+    return data.id;
+  } catch (err) {
+    console.warn('Supabase insertDaily error:', err);
+    return null;
+  }
+}
+
+/**
+ * Update Daily details in Supabase
+ */
+export async function updateDailyInDb(daily: DailyItem): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) return false;
+
+    const { error } = await supabase
+      .from('dailies')
+      .update({
+        title: daily.title,
+        notes: daily.notes,
+        difficulty: daily.difficulty,
+        attribute_type: daily.attributeType,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', daily.id)
+      .eq('user_id', userId);
+
+    return !error;
+  } catch (err) {
+    console.warn('Supabase updateDaily error:', err);
+    return false;
+  }
+}
+
+/**
+ * Delete a Daily in Supabase
+ */
+export async function deleteDailyInDb(dailyId: string): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) return false;
+
+    const { error } = await supabase
+      .from('dailies')
+      .delete()
+      .eq('id', dailyId)
+      .eq('user_id', userId);
+
+    return !error;
+  } catch (err) {
+    console.warn('Supabase deleteDaily error:', err);
+    return false;
+  }
+}
+
+/**
+ * Insert a new Todo in Supabase
+ */
+export async function insertTodoToDb(todo: TodoItem): Promise<string | null> {
+  if (!isSupabaseConfigured) return null;
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) return null;
+
+    const { data, error } = await supabase
+      .from('todos')
+      .insert({
+        user_id: userId,
+        title: todo.title,
+        notes: todo.notes,
+        completed: false,
+        due_date: todo.dueDate || 'Today',
+        difficulty: todo.difficulty,
+        attribute_type: todo.attributeType,
+      })
+      .select('id')
+      .single();
+
+    if (error || !data) return null;
+    return data.id;
+  } catch (err) {
+    console.warn('Supabase insertTodo error:', err);
+    return null;
+  }
+}
+
+/**
+ * Update Todo details in Supabase
+ */
+export async function updateTodoInDb(todo: TodoItem): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) return false;
+
+    const { error } = await supabase
+      .from('todos')
+      .update({
+        title: todo.title,
+        notes: todo.notes,
+        due_date: todo.dueDate,
+        difficulty: todo.difficulty,
+        attribute_type: todo.attributeType,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', todo.id)
+      .eq('user_id', userId);
+
+    return !error;
+  } catch (err) {
+    console.warn('Supabase updateTodo error:', err);
+    return false;
+  }
+}
+
+/**
+ * Delete a Todo in Supabase
+ */
+export async function deleteTodoInDb(todoId: string): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) return false;
+
+    const { error } = await supabase
+      .from('todos')
+      .delete()
+      .eq('id', todoId)
+      .eq('user_id', userId);
+
+    return !error;
+  } catch (err) {
+    console.warn('Supabase deleteTodo error:', err);
+    return false;
+  }
+}
+

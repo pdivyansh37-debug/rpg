@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check, Flame } from 'lucide-react';
+import { Check, Flame, Pencil, Trash2 } from 'lucide-react';
 import { DailyItem } from '@/types/game';
 import { sound } from '@/lib/sound';
 
@@ -101,10 +101,34 @@ export const DailiesListView: React.FC<DailiesListViewProps> = ({
                   </div>
                 </div>
 
-                {/* Right Streak Badge */}
-                <div className="flex items-center gap-1 text-xs font-black text-amber-300 bg-amber-950/80 border border-amber-500/50 px-2.5 py-1 rounded-xl shrink-0 shadow-[0_0_8px_rgba(251,191,36,0.2)]">
-                  <Flame className="w-3.5 h-3.5 fill-amber-400 text-amber-400 animate-pulse" />
-                  <span>{daily.streak}D</span>
+                {/* Right Actions: Streak Badge + Edit/Delete Buttons */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center gap-1 text-xs font-black text-amber-300 bg-amber-950/80 border border-amber-500/50 px-2.5 py-1 rounded-xl shadow-[0_0_8px_rgba(251,191,36,0.2)]">
+                    <Flame className="w-3.5 h-3.5 fill-amber-400 text-amber-400 animate-pulse" />
+                    <span>{daily.streak}D</span>
+                  </div>
+
+                  {onEditDaily && (
+                    <button
+                      type="button"
+                      onClick={() => onEditDaily(daily)}
+                      title="Edit Daily"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/80 text-slate-400 hover:border-purple-400 hover:text-purple-300 transition-colors"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
+                  {onDeleteDaily && (
+                    <button
+                      type="button"
+                      onClick={() => onDeleteDaily(daily.id)}
+                      title="Delete Daily"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/80 text-slate-400 hover:border-rose-500 hover:text-rose-400 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>

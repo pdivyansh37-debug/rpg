@@ -4,12 +4,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { HeroHud } from '@/components/hero-hud';
-import { QuestsHubView } from '@/components/quests-hub-view';
+import { QuestsHubView, ForgeSubTab } from '@/components/quests-hub-view';
 import { CharacterMatrixView } from '@/components/character-matrix-view';
 import { RewardsVaultView } from '@/components/rewards-vault-view';
 import { SyndicateGuildView } from '@/components/syndicate-guild-view';
 import { CyberBottomNav, MainTabType } from '@/components/cyber-bottom-nav';
-import { CreateQuestModal } from '@/components/create-quest-modal';
+import { TaskCrudModal, TaskType } from '@/components/task-crud-modal';
 import { AuthModal } from '@/components/auth-modal';
 import { HeroFaintModal } from '@/components/hero-faint-modal';
 import { LootCrateModal, LootReward } from '@/components/loot-crate-modal';
@@ -34,16 +34,26 @@ import {
   saveHeroToDb,
   fetchQuestsFromDb,
   insertQuestToDb,
-  toggleQuestInDb,
+  updateQuestInDb,
   deleteQuestInDb,
+  toggleQuestInDb,
+  claimAllQuestsInDb,
   fetchHabitsFromDb,
+  insertHabitToDb,
+  updateHabitInDb,
+  deleteHabitInDb,
   updateHabitCountInDb,
   fetchDailiesFromDb,
+  insertDailyToDb,
+  updateDailyInDb,
+  deleteDailyInDb,
   toggleDailyInDb,
   fetchTodosFromDb,
+  insertTodoToDb,
+  updateTodoInDb,
+  deleteTodoInDb,
   toggleTodoInDb,
   initUserIfMissing,
-  claimAllQuestsInDb,
 } from '@/lib/supabase-service';
 import confetti from 'canvas-confetti';
 
@@ -265,7 +275,7 @@ const INITIAL_OBJECTIVES: StartingObjective[] = [
 
 export default function MasterHeroQuestApp() {
   const router = useRouter();
-  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [isAuthChecking, setIsAuthChecking] = useState(false);
 
   const [hero, setHero] = useState<HeroState>(INITIAL_HERO);
   const [quests, setQuests] = useState<CyberQuest[]>(INITIAL_QUESTS);
@@ -276,7 +286,142 @@ export default function MasterHeroQuestApp() {
     useState<StartingObjective[]>(INITIAL_OBJECTIVES);
 
   const [activeTab, setActiveTab] = useState<MainTabType>('QUESTS');
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  // Task CRUD Modal states
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [taskModalType, setTaskModalType] = useState<TaskType>('QUEST');
+  const [editingQuest, setEditingQuest] = useState<CyberQuest | null>(null);
+  const [editingHabit, setEditingHabit] = useState<HabitItem | null>(null);
+  const [editingDaily, setEditingDaily] = useState<DailyItem | null>(null);
+  const [editingTodo, setEditingTodo] = useState<TodoItem | null>(null);
+
+  // Modal Open Dispatchers
+  const handleOpenCreateTask = (subTab?: ForgeSubTab) => {
+    const typeMap: Record<ForgeSubTab, TaskType> = {
+      PROTOCOLS: 'QUEST',
+      HABITS: 'HABIT',
+      DAILIES: 'DAILY',
+      TODOS: 'TODO',
+    };
+    setTaskModalType(subTab ? typeMap[subTab] : 'QUEST');
+    setEditingQuest(null);
+    setEditingHabit(null);
+    setEditingDaily(null);
+    setEditingTodo(null);
+    setIsTaskModalOpen(true);
+  };
+
+  const handleOpenEditQuest = (quest: CyberQuest) => {
+    setTaskModalType('QUEST');
+    setEditingQuest(quest);
+    setEditingHabit(null);
+    setEditingDaily(null);
+    setEditingTodo(null);
+    setIsTaskModalOpen(true);
+  };
+
+  const handleOpenEditHabit = (habit: HabitItem) => {
+    setTaskModalType('HABIT');
+    setEditingQuest(null);
+    setEditingHabit(habit);
+    setEditingDaily(null);
+    setEditingTodo(null);
+    setIsTaskModalOpen(true);
+  };
+
+  const handleOpenEditDaily = (daily: DailyItem) => {
+    setTaskModalType('DAILY');
+    setEditingQuest(null);
+    setEditingHabit(null);
+    setEditingDaily(daily);
+    setEditingTodo(null);
+    setIsTaskModalOpen(true);
+  };
+
+  const handleOpenEditTodo = (todo: TodoItem) => {
+    setTaskModalType('TODO');
+    setEditingQuest(null);
+    setEditingHabit(null);
+    setEditingDaily(null);
+    setEditingTodo(todo);
+    setIsTaskModalOpen(true);
+  };
+
+  // Quest CRUD Handlers
+  const handleCreateQuest = (newQuest: CyberQuest) => {
+    sound.playSkillUnlock();
+    insertQuestToDb(newQuest);
+    setQuests((prev) => [newQuest, ...prev]);
+  };
+
+  const handleUpdateQuest = (updatedQuest: CyberQuest) => {
+    sound.playClick();
+    updateQuestInDb(updatedQuest);
+    setQuests((prev) => prev.map((q) => (q.id === updatedQuest.id ? updatedQuest : q)));
+  };
+
+  const handleDeleteQuest = (id: string) => {
+    sound.playClick();
+    deleteQuestInDb(id);
+    setQuests((prev) => prev.filter((q) => q.id !== id));
+  };
+
+  // Habit CRUD Handlers
+  const handleCreateHabit = (newHabit: HabitItem) => {
+    sound.playSkillUnlock();
+    insertHabitToDb(newHabit);
+    setHabits((prev) => [...prev, newHabit]);
+  };
+
+  const handleUpdateHabit = (updatedHabit: HabitItem) => {
+    sound.playClick();
+    updateHabitInDb(updatedHabit);
+    setHabits((prev) => prev.map((h) => (h.id === updatedHabit.id ? updatedHabit : h)));
+  };
+
+  const handleDeleteHabit = (id: string) => {
+    sound.playClick();
+    deleteHabitInDb(id);
+    setHabits((prev) => prev.filter((h) => h.id !== id));
+  };
+
+  // Daily CRUD Handlers
+  const handleCreateDaily = (newDaily: DailyItem) => {
+    sound.playSkillUnlock();
+    insertDailyToDb(newDaily);
+    setDailies((prev) => [...prev, newDaily]);
+  };
+
+  const handleUpdateDaily = (updatedDaily: DailyItem) => {
+    sound.playClick();
+    updateDailyInDb(updatedDaily);
+    setDailies((prev) => prev.map((d) => (d.id === updatedDaily.id ? updatedDaily : d)));
+  };
+
+  const handleDeleteDaily = (id: string) => {
+    sound.playClick();
+    deleteDailyInDb(id);
+    setDailies((prev) => prev.filter((d) => d.id !== id));
+  };
+
+  // Todo CRUD Handlers
+  const handleCreateTodo = (newTodo: TodoItem) => {
+    sound.playSkillUnlock();
+    insertTodoToDb(newTodo);
+    setTodos((prev) => [...prev, newTodo]);
+  };
+
+  const handleUpdateTodo = (updatedTodo: TodoItem) => {
+    sound.playClick();
+    updateTodoInDb(updatedTodo);
+    setTodos((prev) => prev.map((t) => (t.id === updatedTodo.id ? updatedTodo : t)));
+  };
+
+  const handleDeleteTodo = (id: string) => {
+    sound.playClick();
+    deleteTodoInDb(id);
+    setTodos((prev) => prev.filter((t) => t.id !== id));
+  };
 
   // Gamification & Feedback states
   const [comboMultiplier, setComboMultiplier] = useState(1.0);
@@ -360,37 +505,14 @@ export default function MasterHeroQuestApp() {
     }, 45000); // 45s combo window
   };
 
-  // Check Authentication on initial app open - redirect to /login if not authenticated or guest
+  // Instant non-blocking session hydration in background
   useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setIsAuthChecking(false);
-      return;
-    }
+    if (!isSupabaseConfigured) return;
 
-    const isGuestAllowed =
-      typeof window !== 'undefined' && sessionStorage.getItem('guest_mode') === 'true';
-
-    // Fast check: if no Supabase session token in localStorage and not guest, redirect to /login immediately
-    let hasStoredSession = false;
-    try {
-      if (typeof window !== 'undefined') {
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && (key.startsWith('sb-') || key.includes('supabase.auth.token'))) {
-            hasStoredSession = true;
-            break;
-          }
-        }
-      }
-    } catch {}
-
-    if (!hasStoredSession && !isGuestAllowed) {
-      router.replace('/login');
-      return;
-    }
-
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
+    // Fast asynchronous session check from local cache
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const user = session.user;
         setCurrentUser({
           id: user.id,
           email: user.email,
@@ -408,11 +530,6 @@ export default function MasterHeroQuestApp() {
             user.email?.split('@')[0] ||
             h.username,
         }));
-        setIsAuthChecking(false);
-      } else if (isGuestAllowed) {
-        setIsAuthChecking(false);
-      } else {
-        router.replace('/login');
       }
     });
 
@@ -437,26 +554,11 @@ export default function MasterHeroQuestApp() {
             session.user.email?.split('@')[0] ||
             h.username,
         }));
-        setIsAuthChecking(false);
-      } else {
-        const isGuestAllowed =
-          typeof window !== 'undefined' && sessionStorage.getItem('guest_mode') === 'true';
-        if (!isGuestAllowed) {
-          router.replace('/login');
-        } else {
-          setCurrentUser({
-            id: 'user-1',
-            email: null,
-            username: 'Nexus Operator',
-            avatarUrl: null,
-            isGuest: true,
-          });
-        }
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [router]);
+  }, []);
 
   // Synchronize isolated player data from Supabase whenever active user changes
   useEffect(() => {
@@ -958,7 +1060,7 @@ export default function MasterHeroQuestApp() {
             todos={todos}
             startingObjectives={startingObjectives}
             onToggleStatus={handleToggleQuestStatus}
-            onOpenCreateQuest={() => setIsCreateOpen(true)}
+            onOpenCreateQuest={handleOpenCreateTask}
             onToggleOverclock={() => {
               sound.playOverclock();
               setHero((h) => ({ ...h, isOverclocked: !h.isOverclocked }));
@@ -969,6 +1071,14 @@ export default function MasterHeroQuestApp() {
             onToggleDaily={handleToggleDaily}
             onToggleTodo={handleToggleTodo}
             onCompleteObjective={handleCompleteObjective}
+            onEditQuest={handleOpenEditQuest}
+            onDeleteQuest={handleDeleteQuest}
+            onEditHabit={handleOpenEditHabit}
+            onDeleteHabit={handleDeleteHabit}
+            onEditDaily={handleOpenEditDaily}
+            onDeleteDaily={handleDeleteDaily}
+            onEditTodo={handleOpenEditTodo}
+            onDeleteTodo={handleDeleteTodo}
           />
         )}
 
@@ -1042,15 +1152,27 @@ export default function MasterHeroQuestApp() {
         }}
       />
 
-      {/* Create Quest Modal */}
-      <CreateQuestModal
-        isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
-        onQuestCreated={(newQuest) => {
-          sound.playSkillUnlock();
-          insertQuestToDb(newQuest);
-          setQuests((prev) => [newQuest, ...prev]);
-        }}
+      {/* Task CRUD (Create / Edit) Universal Modal */}
+      <TaskCrudModal
+        isOpen={isTaskModalOpen}
+        onClose={() => setIsTaskModalOpen(false)}
+        initialTaskType={taskModalType}
+        editingQuest={editingQuest}
+        editingHabit={editingHabit}
+        editingDaily={editingDaily}
+        editingTodo={editingTodo}
+        onCreateQuest={handleCreateQuest}
+        onUpdateQuest={handleUpdateQuest}
+        onDeleteQuest={handleDeleteQuest}
+        onCreateHabit={handleCreateHabit}
+        onUpdateHabit={handleUpdateHabit}
+        onDeleteHabit={handleDeleteHabit}
+        onCreateDaily={handleCreateDaily}
+        onUpdateDaily={handleUpdateDaily}
+        onDeleteDaily={handleDeleteDaily}
+        onCreateTodo={handleCreateTodo}
+        onUpdateTodo={handleUpdateTodo}
+        onDeleteTodo={handleDeleteTodo}
       />
 
       {/* Google Auth Modal */}

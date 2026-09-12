@@ -35,7 +35,7 @@ interface QuestsHubViewProps {
   todos: TodoItem[];
   startingObjectives: StartingObjective[];
   onToggleStatus: (id: string, completed: boolean) => void;
-  onOpenCreateQuest: () => void;
+  onOpenCreateQuest: (subTab?: ForgeSubTab) => void;
   onToggleOverclock: () => void;
   onClaimAll: () => void;
   onTriggerHabitPlus: (habit: HabitItem, e: React.MouseEvent) => void;
@@ -43,6 +43,14 @@ interface QuestsHubViewProps {
   onToggleDaily: (daily: DailyItem, e: React.MouseEvent) => void;
   onToggleTodo: (todo: TodoItem, e: React.MouseEvent) => void;
   onCompleteObjective?: (id: string) => void;
+  onEditQuest?: (quest: CyberQuest) => void;
+  onDeleteQuest?: (id: string) => void;
+  onEditHabit?: (habit: HabitItem) => void;
+  onDeleteHabit?: (id: string) => void;
+  onEditDaily?: (daily: DailyItem) => void;
+  onDeleteDaily?: (id: string) => void;
+  onEditTodo?: (todo: TodoItem) => void;
+  onDeleteTodo?: (id: string) => void;
 }
 
 export const QuestsHubView: React.FC<QuestsHubViewProps> = ({
@@ -61,6 +69,14 @@ export const QuestsHubView: React.FC<QuestsHubViewProps> = ({
   onToggleDaily,
   onToggleTodo,
   onCompleteObjective,
+  onEditQuest,
+  onDeleteQuest,
+  onEditHabit,
+  onDeleteHabit,
+  onEditDaily,
+  onDeleteDaily,
+  onEditTodo,
+  onDeleteTodo,
 }) => {
   const [subTab, setSubTab] = useState<ForgeSubTab>('PROTOCOLS');
   const [questFilter, setQuestFilter] = useState<'ALL' | 'RITUALS' | 'BOSS' | 'COMPLETED'>('ALL');
@@ -127,7 +143,7 @@ export const QuestsHubView: React.FC<QuestsHubViewProps> = ({
             type="button"
             onClick={() => {
               sound.playClick();
-              onOpenCreateQuest();
+              onOpenCreateQuest(subTab);
             }}
             className="flex items-center gap-1 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 px-3 py-1.5 text-[11px] font-black text-slate-950 shadow-[0_0_12px_rgba(0,240,255,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all"
           >
@@ -283,6 +299,8 @@ export const QuestsHubView: React.FC<QuestsHubViewProps> = ({
                 key={q.id}
                 quest={q}
                 onToggleStatus={onToggleStatus}
+                onEdit={onEditQuest}
+                onDelete={onDeleteQuest}
               />
             ))}
 
@@ -291,7 +309,7 @@ export const QuestsHubView: React.FC<QuestsHubViewProps> = ({
                 <p>// NO ACTIVE PROTOCOLS IN THIS FILTER</p>
                 <button
                   type="button"
-                  onClick={onOpenCreateQuest}
+                  onClick={() => onOpenCreateQuest('PROTOCOLS')}
                   className="mt-2 text-cyan-400 hover:underline font-bold"
                 >
                   + Add a new quest protocol
@@ -307,6 +325,9 @@ export const QuestsHubView: React.FC<QuestsHubViewProps> = ({
           habits={habits}
           onTriggerPlus={onTriggerHabitPlus}
           onTriggerMinus={onTriggerHabitMinus}
+          onEditHabit={onEditHabit}
+          onDeleteHabit={onDeleteHabit}
+          onOpenCreate={() => onOpenCreateQuest('HABITS')}
         />
       )}
 
@@ -314,6 +335,8 @@ export const QuestsHubView: React.FC<QuestsHubViewProps> = ({
         <DailiesListView
           dailies={dailies}
           onToggleDaily={onToggleDaily}
+          onEditDaily={onEditDaily}
+          onDeleteDaily={onDeleteDaily}
         />
       )}
 
@@ -321,6 +344,8 @@ export const QuestsHubView: React.FC<QuestsHubViewProps> = ({
         <TodosListView
           todos={todos}
           onToggleTodo={onToggleTodo}
+          onEditTodo={onEditTodo}
+          onDeleteTodo={onDeleteTodo}
         />
       )}
     </div>

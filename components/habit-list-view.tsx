@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Minus, Flame, Sparkles } from 'lucide-react';
+import { Plus, Minus, Flame, Sparkles, Pencil, Trash2 } from 'lucide-react';
 import { HabitItem } from '@/types/game';
 import { sound } from '@/lib/sound';
 
@@ -12,6 +12,7 @@ interface HabitListViewProps {
   onTriggerMinus: (habit: HabitItem, e: React.MouseEvent) => void;
   onEditHabit?: (habit: HabitItem) => void;
   onDeleteHabit?: (id: string) => void;
+  onOpenCreate?: () => void;
 }
 
 export const HabitListView: React.FC<HabitListViewProps> = ({
@@ -20,12 +21,22 @@ export const HabitListView: React.FC<HabitListViewProps> = ({
   onTriggerMinus,
   onEditHabit,
   onDeleteHabit,
+  onOpenCreate,
 }) => {
   return (
     <div className="space-y-3 font-mono">
       {habits.length === 0 ? (
         <div className="rounded-3xl border-2 border-dashed border-indigo-950/80 bg-[#0e0a1e]/40 p-8 text-center text-slate-400 text-xs">
-          No habits forged yet. Tap the + button to build positive rituals and track vices!
+          <p>No habits forged yet. Tap + below to build positive rituals and track vices!</p>
+          {onOpenCreate && (
+            <button
+              type="button"
+              onClick={onOpenCreate}
+              className="mt-3 text-amber-400 hover:underline font-bold"
+            >
+              + Create a new habit
+            </button>
+          )}
         </div>
       ) : (
         habits.map((habit) => (
@@ -57,19 +68,45 @@ export const HabitListView: React.FC<HabitListViewProps> = ({
             </div>
 
             {/* Center Content: Title, Notes, Counters */}
-            <div
-              onClick={() => onEditHabit?.(habit)}
-              className="flex flex-1 cursor-pointer flex-col justify-center px-2 py-3 text-left min-w-0"
-            >
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm sm:text-base font-black text-white tracking-tight leading-snug group-hover:text-amber-300 transition-colors truncate">
-                  {habit.title}
-                </h3>
-                {habit.attributeType && (
-                  <span className="rounded-md bg-indigo-950/80 border border-indigo-800 px-1.5 py-0.2 text-[9px] font-bold text-cyan-300 shrink-0">
-                    {habit.attributeType}
-                  </span>
-                )}
+            <div className="flex flex-1 flex-col justify-center px-2 py-3 text-left min-w-0">
+              <div className="flex items-center justify-between gap-1">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <h3
+                    onClick={() => onEditHabit?.(habit)}
+                    className="text-sm sm:text-base font-black text-white tracking-tight leading-snug hover:text-amber-300 transition-colors truncate cursor-pointer"
+                  >
+                    {habit.title}
+                  </h3>
+                  {habit.attributeType && (
+                    <span className="rounded-md bg-indigo-950/80 border border-indigo-800 px-1.5 py-0.2 text-[9px] font-bold text-cyan-300 shrink-0">
+                      {habit.attributeType}
+                    </span>
+                  )}
+                </div>
+
+                {/* Edit & Delete Action Buttons */}
+                <div className="flex items-center gap-1 shrink-0">
+                  {onEditHabit && (
+                    <button
+                      type="button"
+                      onClick={() => onEditHabit(habit)}
+                      title="Edit Habit"
+                      className="flex h-6 w-6 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/80 text-slate-400 hover:border-amber-400 hover:text-amber-300 transition-colors"
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </button>
+                  )}
+                  {onDeleteHabit && (
+                    <button
+                      type="button"
+                      onClick={() => onDeleteHabit(habit.id)}
+                      title="Delete Habit"
+                      className="flex h-6 w-6 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/80 text-slate-400 hover:border-rose-500 hover:text-rose-400 transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {habit.notes && (

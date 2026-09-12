@@ -19,6 +19,8 @@ import {
   Dumbbell,
   Droplet,
   Layers,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { completeQuest, QuestCompletionData } from '@/actions/quest-actions';
 import { LevelUpModal } from './level-up-modal';
@@ -45,6 +47,8 @@ export interface QuestCardProps {
   quest: CyberQuest;
   onQuestCompleted?: (data: QuestCompletionData) => void;
   onToggleStatus?: (id: string, completed: boolean) => void;
+  onEdit?: (quest: CyberQuest) => void;
+  onDelete?: (id: string) => void;
 }
 
 // Visual Themes per Attribute / Card Category
@@ -110,6 +114,8 @@ export const QuestCard: React.FC<QuestCardProps> = ({
   quest,
   onQuestCompleted,
   onToggleStatus,
+  onEdit,
+  onDelete,
 }) => {
   const [isPending, startTransition] = useTransition();
   const [floatingRewards, setFloatingRewards] = useState<{
@@ -335,31 +341,65 @@ export const QuestCard: React.FC<QuestCardProps> = ({
                 )}
               </div>
 
-              {/* Right: Meta Tag Badge */}
-              {quest.metaBadge && (
-                <div className="flex items-center">
-                  {quest.metaBadge === 'BOSS GATE' ? (
-                    <span className="flex items-center gap-1 rounded-lg border border-cyan-400/80 bg-gradient-to-r from-blue-950 to-cyan-950 px-2.5 py-1 font-mono text-[10px] sm:text-xs font-black text-cyan-300 shadow-[0_0_12px_rgba(0,240,255,0.35)]">
-                      <Skull className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>BOSS GATE</span>
-                    </span>
-                  ) : quest.metaBadge === '3 Sets' ? (
-                    <span className="flex items-center gap-1 rounded-lg border border-purple-500/80 bg-purple-950/80 px-2.5 py-1 font-mono text-xs font-bold text-purple-300 shadow-sm">
-                      <Dumbbell className="w-3.5 h-3.5 text-purple-400" />
-                      <span>3 Sets</span>
-                    </span>
-                  ) : quest.metaBadge === 'Daily Cycle' ? (
-                    <span className="flex items-center gap-1 rounded-lg border border-cyan-500/80 bg-cyan-950/80 px-2.5 py-1 font-mono text-xs font-bold text-cyan-300 shadow-sm">
-                      <Clock className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>Daily Cycle</span>
-                    </span>
-                  ) : (
-                    <span className="rounded-lg border border-slate-700 bg-slate-900/80 px-2.5 py-1 font-mono text-xs font-bold text-slate-300">
-                      {quest.metaBadge}
-                    </span>
-                  )}
-                </div>
-              )}
+              {/* Right: Meta Tag Badge + Action Buttons (Edit / Delete) */}
+              <div className="flex items-center gap-1.5">
+                {quest.metaBadge && (
+                  <div>
+                    {quest.metaBadge === 'BOSS GATE' ? (
+                      <span className="flex items-center gap-1 rounded-lg border border-cyan-400/80 bg-gradient-to-r from-blue-950 to-cyan-950 px-2 py-1 font-mono text-[10px] font-black text-cyan-300 shadow-[0_0_12px_rgba(0,240,255,0.35)]">
+                        <Skull className="w-3 h-3 text-cyan-400" />
+                        <span>BOSS GATE</span>
+                      </span>
+                    ) : quest.metaBadge === '3 Sets' ? (
+                      <span className="flex items-center gap-1 rounded-lg border border-purple-500/80 bg-purple-950/80 px-2 py-1 font-mono text-[10px] font-bold text-purple-300 shadow-sm">
+                        <Dumbbell className="w-3 h-3 text-purple-400" />
+                        <span>3 Sets</span>
+                      </span>
+                    ) : quest.metaBadge === 'Daily Cycle' ? (
+                      <span className="flex items-center gap-1 rounded-lg border border-cyan-500/80 bg-cyan-950/80 px-2 py-1 font-mono text-[10px] font-bold text-cyan-300 shadow-sm">
+                        <Clock className="w-3 h-3 text-cyan-400" />
+                        <span>Daily Cycle</span>
+                      </span>
+                    ) : (
+                      <span className="rounded-lg border border-slate-700 bg-slate-900/80 px-2 py-1 font-mono text-[10px] font-bold text-slate-300">
+                        {quest.metaBadge}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Edit Button */}
+                {onEdit && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      sound.playClick();
+                      onEdit(quest);
+                    }}
+                    title="Edit Protocol"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/80 text-slate-400 hover:border-cyan-400 hover:text-cyan-300 transition-colors"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                )}
+
+                {/* Delete Button */}
+                {onDelete && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      sound.playClick();
+                      onDelete(quest.id);
+                    }}
+                    title="Delete Protocol"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/80 text-slate-400 hover:border-rose-500 hover:text-rose-400 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

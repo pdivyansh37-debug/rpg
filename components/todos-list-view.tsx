@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check, Clock, Sparkles } from 'lucide-react';
+import { Check, Clock, Sparkles, Pencil, Trash2 } from 'lucide-react';
 import { TodoItem } from '@/types/game';
 import { sound } from '@/lib/sound';
 
@@ -132,6 +132,31 @@ export const TodosListView: React.FC<TodosListViewProps> = ({
                       </span>
                     )}
                   </div>
+                </div>
+
+                {/* Right Action Buttons */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {onEditTodo && (
+                    <button
+                      type="button"
+                      onClick={() => onEditTodo(todo)}
+                      title="Edit To-Do"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/80 text-slate-400 hover:border-emerald-400 hover:text-emerald-300 transition-colors"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
+                  {onDeleteTodo && (
+                    <button
+                      type="button"
+                      onClick={() => onDeleteTodo(todo.id)}
+                      title="Delete To-Do"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/80 text-slate-400 hover:border-rose-500 hover:text-rose-400 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>
