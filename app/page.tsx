@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import { HeroHud } from '@/components/hero-hud';
 import { QuestsHubView } from '@/components/quests-hub-view';
 import { CharacterMatrixView } from '@/components/character-matrix-view';
-import { ArmoryBazaarView } from '@/components/armory-bazaar-view';
-import { WorldBossView } from '@/components/world-boss-view';
+import { RewardsVaultView } from '@/components/rewards-vault-view';
+import { SyndicateGuildView } from '@/components/syndicate-guild-view';
 import { CyberBottomNav, MainTabType } from '@/components/cyber-bottom-nav';
 import { CreateQuestModal } from '@/components/create-quest-modal';
 import { AuthModal } from '@/components/auth-modal';
@@ -15,6 +15,8 @@ import { HeroFaintModal } from '@/components/hero-faint-modal';
 import { LootCrateModal, LootReward } from '@/components/loot-crate-modal';
 import { FloatingCombatText, CombatTextEvent } from '@/components/floating-combat-text';
 import { LevelUpModal } from '@/components/level-up-modal';
+import { AvatarCustomizerModal } from '@/components/avatar-customizer-modal';
+import { DEFAULT_AVATAR } from '@/components/pixel-avatar';
 import { CyberQuest } from '@/components/quest-card';
 import {
   HeroState,
@@ -22,6 +24,8 @@ import {
   DailyItem,
   TodoItem,
   StartingObjective,
+  ExchangeRewardItem,
+  ActiveBuffs,
 } from '@/types/game';
 import { sound } from '@/lib/sound';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
@@ -70,6 +74,7 @@ const INITIAL_HERO: HeroState = {
   surgeBonus: 10.0,
   strikeLatency: 35,
   isOverclocked: false,
+  avatar: DEFAULT_AVATAR,
 };
 
 const INITIAL_QUESTS: CyberQuest[] = [
@@ -279,8 +284,17 @@ export default function MasterHeroQuestApp() {
   const [isLootModalOpen, setIsLootModalOpen] = useState(false);
   const [isFaintModalOpen, setIsFaintModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isAvatarCustomizerOpen, setIsAvatarCustomizerOpen] = useState(false);
   const [levelUpData, setLevelUpData] = useState<any>(null);
   const [isHitFlashing, setIsHitFlashing] = useState(false);
+
+  // Active Buffs & Perks state
+  const [activeBuffs, setActiveBuffs] = useState<ActiveBuffs>({
+    streakShields: 0,
+    xpBoosterActive: false,
+    xpBoosterExpiresAt: null,
+    activeFlare: 'NONE',
+  });
 
   // Authenticated User Session state
   const [currentUser, setCurrentUser] = useState<{
@@ -808,6 +822,73 @@ export default function MasterHeroQuestApp() {
     }));
   };
 
+  // Handle Rewards & Coin Exchange purchases
+  const handlePurchaseReward = (reward: ExchangeRewardItem) => {
+    if (hero.gold < reward.cost) return;
+
+    sound.playBuy();
+
+    // Deduct currency
+    setHero((h) => ({
+      ...h,
+      gold: Math.max(0, h.gold - reward.cost),
+    }));
+
+    // Handle Consumables, Potions & Meta Perks
+    if (reward.category === 'POTION') {
+      if (reward.id === 'pot-freeze') {
+        setActiveBuffs((prev) => ({
+          ...prev,
+          streakShields: prev.streakShields + 1,
+        }));
+        addCombatText(window.innerWidth / 2, window.innerHeight / 2, '❄️ STREAK SHIELD +1!', 'LOOT');
+      } else if (reward.id === 'pot-xp') {
+        setActiveBuffs((prev) => ({
+          ...prev,
+          xpBoosterActive: true,
+          xpBoosterExpiresAt: Date.now() + 24 * 60 * 60 * 1000,
+        }));
+        sound.playLevelUp();
+        addCombatText(window.innerWidth / 2, window.innerHeight / 2, '⚡ 2X XP BOOSTER (24H)!', 'CRIT');
+      } else if (reward.id === 'pot-heal') {
+        setHero((h) => ({ ...h, hp: h.maxHp }));
+        sound.playHeal();
+        addCombatText(window.innerWidth / 2, window.innerHeight / 2, '💚 FULL HP RESTORED!', 'HEAL');
+      }
+    } else if (reward.category === 'META_PERK') {
+      if (reward.id === 'meta-flare-cyan') {
+        setActiveBuffs((prev) => ({ ...prev, activeFlare: 'NEON_CYAN' }));
+        addCombatText(window.innerWidth / 2, window.innerHeight / 2, '✨ CYAN FLARE EQUIPPED!', 'LOOT');
+      } else if (reward.id === 'meta-flare-magenta') {
+        setActiveBuffs((prev) => ({ ...prev, activeFlare: 'CHRONO_PURPLE' }));
+        addCombatText(window.innerWidth / 2, window.innerHeight / 2, '🔥 PURPLE FLARE EQUIPPED!', 'LOOT');
+      } else if (reward.id === 'meta-flare-gold') {
+        setActiveBuffs((prev) => ({ ...prev, activeFlare: 'SOLAR_GOLD' }));
+        addCombatText(window.innerWidth / 2, window.innerHeight / 2, '👑 SOLAR CROWN FLARE EQUIPPED!', 'CRIT');
+      } else if (reward.id === 'meta-scroll-dragon' || reward.id === 'meta-scroll-cyber') {
+        addCombatText(window.innerWidth / 2, window.innerHeight / 2, '📜 RAID SCROLL ACQUIRED!', 'LOOT');
+      } else if (reward.id === 'meta-gift-badge') {
+        addCombatText(window.innerWidth / 2, window.innerHeight / 2, '🎁 TIP / BADGE SENT!', 'LOOT');
+      }
+    } else if (reward.category === 'EQUIPMENT') {
+      addCombatText(window.innerWidth / 2, window.innerHeight / 2, `⚔️ ${reward.title} EQUIPPED!`, 'CRIT');
+      setStartingObjectives((prev) =>
+        prev.map((o) => (o.id === 'obj-3' ? { ...o, completed: true } : o))
+      );
+    } else if (reward.category === 'CUSTOM') {
+      addCombatText(window.innerWidth / 2, window.innerHeight / 2, `🎉 CLAIMED: ${reward.title}!`, 'LOOT');
+    }
+
+    try {
+      confetti({
+        particleCount: 70,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#00F0FF', '#FF007A', '#FBBF24', '#10B981'],
+      });
+    } catch {}
+  };
+
   if (isAuthChecking) {
     return (
       <div className="min-h-screen bg-[#070514] font-mono text-slate-100 flex flex-col items-center justify-center p-4">
@@ -844,7 +925,7 @@ export default function MasterHeroQuestApp() {
       {/* Floating Combat Text Layer */}
       <FloatingCombatText events={combatTextEvents} />
 
-      {/* Top Sticky Hero HUD with Google Auth & HP bar */}
+      {/* Top Sticky Hero HUD with Avatar, Active Buffs, Google Auth & HP bar */}
       <HeroHud
         hero={{
           username: hero.username,
@@ -856,11 +937,14 @@ export default function MasterHeroQuestApp() {
           streakCount: hero.streakCount,
           hp: hero.hp,
           maxHp: hero.maxHp,
+          avatar: hero.avatar || DEFAULT_AVATAR,
         }}
+        activeBuffs={activeBuffs}
         comboMultiplier={comboMultiplier}
         currentUser={currentUser}
         onProfileClick={() => setActiveTab('ATTRIBUTES')}
         onAuthClick={() => setIsAuthModalOpen(true)}
+        onOpenAvatarCustomizer={() => setIsAvatarCustomizerOpen(true)}
       />
 
       {/* Main Content Area by Tab */}
@@ -891,6 +975,7 @@ export default function MasterHeroQuestApp() {
         {activeTab === 'ATTRIBUTES' && (
           <CharacterMatrixView
             hero={hero}
+            onOpenAvatarCustomizer={() => setIsAvatarCustomizerOpen(true)}
             onSpendSkillPoint={() => {
               if (hero.unspentSkillPoints > 0) {
                 sound.playSkillUnlock();
@@ -904,33 +989,45 @@ export default function MasterHeroQuestApp() {
           />
         )}
 
-        {activeTab === 'ARMORY' && (
-          <ArmoryBazaarView
+        {activeTab === 'REWARDS' && (
+          <RewardsVaultView
             userGold={hero.gold}
             userShards={hero.cyberShards}
-            onPurchaseItem={(cost) => {
-              sound.playBuy();
-              setHero((h) => ({
-                ...h,
-                gold: Math.max(0, h.gold - cost),
-                hp: h.maxHp,
-              }));
-              setStartingObjectives((prev) =>
-                prev.map((o) => (o.id === 'obj-3' ? { ...o, completed: true } : o))
-              );
-            }}
+            heroHp={hero.hp}
+            heroMaxHp={hero.maxHp}
+            activeBuffs={activeBuffs}
+            onPurchaseReward={handlePurchaseReward}
           />
         )}
 
-        {activeTab === 'BOSS' && (
-          <WorldBossView
-            onBossDamageDealt={(damage) => {
+        {activeTab === 'SYNDICATE' && (
+          <SyndicateGuildView
+            currentUsername={hero.username}
+            currentUserLevel={hero.level}
+            currentUserStreak={hero.streakCount}
+            currentUserXp={hero.totalXp}
+            currentUserGold={hero.gold}
+            activeFlare={activeBuffs.activeFlare}
+            onSendTip={(targetName: string, amount: number) => {
+              if (hero.gold >= amount) {
+                sound.playCoin();
+                setHero((h) => ({ ...h, gold: Math.max(0, h.gold - amount) }));
+                addCombatText(
+                  window.innerWidth / 2,
+                  window.innerHeight / 2,
+                  `🎁 -${amount} COINS SENT TO ${targetName}!`,
+                  'LOOT'
+                );
+              }
+            }}
+            onAttackPartyBoss={(damage: number) => {
               sound.playCritHit();
-              setHero((h) => ({
-                ...h,
-                gold: h.gold + Math.round(damage * 0.1),
-                cyberShards: h.cyberShards + 1,
-              }));
+              addCombatText(
+                window.innerWidth / 2,
+                window.innerHeight / 2,
+                `💥 +${damage} BOSS DAMAGE!`,
+                'CRIT'
+              );
             }}
           />
         )}
@@ -982,6 +1079,19 @@ export default function MasterHeroQuestApp() {
           setTodos(INITIAL_TODOS);
           router.replace('/login');
         }}
+      />
+
+      {/* Avatar Matrix Customizer Modal */}
+      <AvatarCustomizerModal
+        isOpen={isAvatarCustomizerOpen}
+        onClose={() => setIsAvatarCustomizerOpen(false)}
+        currentConfig={hero.avatar || DEFAULT_AVATAR}
+        onSaveConfig={(newAvatar) => {
+          setHero((h) => ({ ...h, avatar: newAvatar }));
+          saveHeroToDb({ ...hero, avatar: newAvatar });
+        }}
+        operatorName={hero.username}
+        operatorLevel={hero.level}
       />
 
       {/* Hero Faint / Death Penalty Modal */}

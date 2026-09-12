@@ -104,6 +104,71 @@ export interface RewardItem {
   isPurchased?: boolean;
 }
 
+export type LeaderboardFlare =
+  | 'NONE'
+  | 'NEON_CYAN'
+  | 'CHRONO_PURPLE'
+  | 'SOLAR_GOLD'
+  | 'GLITCH_FLAME';
+
+export interface ExchangeRewardItem {
+  id: string;
+  title: string;
+  description: string;
+  cost: number;
+  category: 'EQUIPMENT' | 'POTION' | 'META_PERK' | 'CUSTOM';
+  icon?: string;
+  rarity?: 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY' | 'MYTHIC';
+  statBonus?: string;
+  slot?: 'WEAPON' | 'ARMOR' | 'ROBE' | 'SHIELD' | 'POTION' | 'META' | 'CUSTOM';
+  isOwned?: boolean;
+  isEquipped?: boolean;
+  stock?: number;
+  effectType?:
+    | 'HEAL'
+    | 'STREAK_SHIELD'
+    | 'XP_BOOSTER'
+    | 'GUILD_SCROLL'
+    | 'LEADERBOARD_FLARE'
+    | 'GIFT_TIP'
+    | 'CUSTOM';
+}
+
+export interface LeaderboardOperator {
+  id: string;
+  rank: number;
+  username: string;
+  title: string;
+  level: number;
+  streak: number;
+  totalXp: number;
+  gold: number;
+  flare: LeaderboardFlare;
+  isUser?: boolean;
+  avatar?: AvatarConfig;
+}
+
+export interface PartyQuestScroll {
+  id: string;
+  title: string;
+  description: string;
+  targetBoss: string;
+  bossHp: number;
+  currentHp: number;
+  cost: number;
+  rewardXp: number;
+  rewardGold: number;
+  isUnlocked: boolean;
+  participants: { name: string; damage: number; isUser?: boolean }[];
+}
+
+export interface ActiveBuffs {
+  streakShields: number;
+  xpBoosterActive: boolean;
+  xpBoosterExpiresAt?: number | string | null;
+  activeFlare: LeaderboardFlare;
+}
+
 export interface GearItem {
   id: string;
   slot: 'WEAPON' | 'NEURAL_DECK' | 'CHASSIS' | 'RELIC';
@@ -197,4 +262,6 @@ export interface HeroState {
   surgeBonus: number;
   strikeLatency: number;
   isOverclocked: boolean;
+  avatar?: AvatarConfig;
+  activeBuffs?: ActiveBuffs;
 }

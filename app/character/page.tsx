@@ -80,8 +80,8 @@ export default function CharacterPage() {
         activeTab="ATTRIBUTES"
         onSelectTab={(tab) => {
           if (tab === 'QUESTS') router.push('/');
-          if (tab === 'ARMORY') router.push('/shop');
-          if (tab === 'BOSS') router.push('/');
+          if (tab === 'REWARDS') router.push('/shop');
+          if (tab === 'SYNDICATE') router.push('/');
         }}
       />
     </div>

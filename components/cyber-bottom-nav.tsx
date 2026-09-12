@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Swords, Activity, ShoppingBag, Skull, Plus } from 'lucide-react';
+import { Swords, Activity, Gift, Users } from 'lucide-react';
 import { sound } from '@/lib/sound';
 
-export type MainTabType = 'QUESTS' | 'ATTRIBUTES' | 'ARMORY' | 'BOSS';
+export type MainTabType = 'QUESTS' | 'ATTRIBUTES' | 'REWARDS' | 'SYNDICATE';
 
 interface CyberBottomNavProps {
   activeTab: MainTabType;
@@ -20,8 +20,8 @@ export const CyberBottomNav: React.FC<CyberBottomNavProps> = ({
   const tabs = [
     { key: 'QUESTS', label: 'Quests', icon: Swords },
     { key: 'ATTRIBUTES', label: 'Attributes', icon: Activity },
-    { key: 'ARMORY', label: 'Armory', icon: ShoppingBag },
-    { key: 'BOSS', label: 'World Boss', icon: Skull },
+    { key: 'REWARDS', label: 'Rewards', icon: Gift },
+    { key: 'SYNDICATE', label: 'Syndicate', icon: Users },
   ];
 
   return (

@@ -18,6 +18,9 @@ import {
 import { sound } from '@/lib/sound';
 import { ThemeToggle } from './theme-toggle';
 
+import { AvatarConfig, ActiveBuffs } from '@/types/game';
+import { PixelAvatar, DEFAULT_AVATAR } from './pixel-avatar';
+
 export interface HeroHudProps {
   hero: {
     username: string;
@@ -30,8 +33,10 @@ export interface HeroHudProps {
     hp?: number;
     maxHp?: number;
     avatarUrl?: string | null;
+    avatar?: AvatarConfig;
   };
   comboMultiplier?: number;
+  activeBuffs?: ActiveBuffs;
   currentUser?: {
     username: string;
     email?: string | null;
@@ -39,14 +44,17 @@ export interface HeroHudProps {
   };
   onProfileClick?: () => void;
   onAuthClick?: () => void;
+  onOpenAvatarCustomizer?: () => void;
 }
 
 export const HeroHud: React.FC<HeroHudProps> = ({
   hero,
   comboMultiplier = 1.0,
+  activeBuffs,
   currentUser,
   onProfileClick,
   onAuthClick,
+  onOpenAvatarCustomizer,
 }) => {
   const [isMuted, setIsMuted] = useState(sound.getMuted());
 
@@ -70,24 +78,37 @@ export const HeroHud: React.FC<HeroHudProps> = ({
       <div className="mx-auto max-w-5xl px-3 py-2.5 sm:px-6">
         {/* Top Header Row */}
         <div className="flex items-center justify-between gap-2">
-          {/* Left: Paladin Shield Badge + Title */}
+          {/* Left: Pixel Avatar / Shield Badge + Title */}
           <div className="flex items-center gap-2.5">
-            <div className="relative">
-              {/* Gold/Cyan Bordered Shield */}
-              <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl border-2 border-amber-400 bg-gradient-to-b from-indigo-950 to-slate-950 shadow-[0_0_15px_rgba(251,191,36,0.35)]">
-                <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-amber-300" />
+            <button
+              type="button"
+              onClick={() => {
+                sound.playClick();
+                onOpenAvatarCustomizer?.();
+              }}
+              title="Click to customize character avatar"
+              className="relative group transition-transform active:scale-95"
+            >
+              {/* Gold/Cyan Bordered Avatar Box */}
+              <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl border-2 border-cyan-400 bg-gradient-to-b from-indigo-950 to-slate-950 shadow-[0_0_15px_rgba(0,240,255,0.35)] overflow-hidden group-hover:border-amber-400 transition-colors">
+                <PixelAvatar config={hero.avatar || DEFAULT_AVATAR} size={38} />
               </div>
               {/* Overlapping Level Tag */}
               <span className="absolute -bottom-1 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-purple-400 bg-purple-900 font-mono text-[10px] font-black text-purple-200 shadow-[0_0_8px_rgba(168,85,247,0.6)]">
                 {hero.level}
               </span>
-            </div>
+            </button>
 
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-mono text-[11px] font-extrabold tracking-widest text-cyan-400">
-                  PALADIN
-                </span>
+                <button
+                  type="button"
+                  onClick={onOpenAvatarCustomizer}
+                  className="font-mono text-[11px] font-extrabold tracking-widest text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                >
+                  <span>PALADIN</span>
+                  <span className="text-[9px] text-amber-400">🎨</span>
+                </button>
                 <span className="rounded border border-pink-500/80 bg-pink-950/70 px-1 py-0.2 font-mono text-[9px] font-black text-pink-300">
                   MK-VII
                 </span>
@@ -98,7 +119,7 @@ export const HeroHud: React.FC<HeroHudProps> = ({
             </div>
           </div>
 
-          {/* Right: Combo multiplier, Gold, Streak, Auth, SFX */}
+          {/* Right: Combo multiplier, Buffs, Gold, Streak, Auth, SFX */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Active Combo Multiplier Pill */}
             {comboMultiplier > 1.0 && (
@@ -110,6 +131,26 @@ export const HeroHud: React.FC<HeroHudProps> = ({
                 <Zap className="w-3 h-3 text-yellow-300" />
                 <span>x{comboMultiplier.toFixed(1)} COMBO</span>
               </motion.div>
+            )}
+
+            {/* Active Streak Shield Pill */}
+            {activeBuffs && activeBuffs.streakShields > 0 && (
+              <div
+                title={`${activeBuffs.streakShields} Streak Freeze Shields Active`}
+                className="hidden sm:flex items-center gap-1 rounded-full border border-cyan-400 bg-cyan-950/90 px-2 py-0.5 text-[11px] font-bold text-cyan-300 shadow-[0_0_10px_rgba(0,240,255,0.4)]"
+              >
+                <span>❄️ {activeBuffs.streakShields}</span>
+              </div>
+            )}
+
+            {/* Active 2x XP Overdrive Booster Pill */}
+            {activeBuffs && activeBuffs.xpBoosterActive && (
+              <div
+                title="2x XP Overdrive Active (24 Hours)"
+                className="flex items-center gap-1 rounded-full border border-purple-400 bg-purple-950/90 px-2 py-0.5 text-[11px] font-black text-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.5)] animate-pulse"
+              >
+                <span>⚡ 2x XP</span>
+              </div>
             )}
 
             {/* Gold Pill Badge */}

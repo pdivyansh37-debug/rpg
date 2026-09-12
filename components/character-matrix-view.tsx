@@ -21,12 +21,14 @@ import {
 } from 'lucide-react';
 import { StatsRadar } from './stats-radar';
 import { NeuralSkillTree } from './neural-skill-tree';
+import { PixelAvatar, DEFAULT_AVATAR } from './pixel-avatar';
 import { HeroState, AuditLog } from '@/types/game';
 import { sound } from '@/lib/sound';
 
 interface CharacterMatrixViewProps {
   hero: HeroState;
   onSpendSkillPoint: () => void;
+  onOpenAvatarCustomizer?: () => void;
 }
 
 const SAMPLE_AUDIT_LOGS: AuditLog[] = [
@@ -59,6 +61,7 @@ const SAMPLE_AUDIT_LOGS: AuditLog[] = [
 export const CharacterMatrixView: React.FC<CharacterMatrixViewProps> = ({
   hero,
   onSpendSkillPoint,
+  onOpenAvatarCustomizer,
 }) => {
   const [activeSkillModal, setActiveSkillModal] = useState(false);
   const [selectedAttribute, setSelectedAttribute] = useState<string | null>(null);
@@ -131,15 +134,43 @@ export const CharacterMatrixView: React.FC<CharacterMatrixViewProps> = ({
       {/* Breadcrumb Top Nodes */}
       <div className="flex items-center justify-between text-[10px] text-cyan-400 font-bold px-1">
         <span>[ OPERATOR NEURAL GRAPH ]</span>
-        <span className="text-purple-300">[ SYNCHRONIZED: 18:25 ]</span>
+        <button
+          type="button"
+          onClick={() => {
+            sound.playClick();
+            onOpenAvatarCustomizer?.();
+          }}
+          className="text-purple-300 hover:text-cyan-300 transition-colors flex items-center gap-1"
+        >
+          <span>🎨 [ CUSTOMIZE AVATAR ]</span>
+        </button>
       </div>
 
-      {/* Main Radar Card */}
+      {/* Main Radar Card with Avatar Integration */}
       <div className="relative overflow-hidden rounded-3xl border-2 border-cyan-500/60 bg-gradient-to-b from-[#160E30] via-[#0E0C26] to-[#070614] p-5 shadow-[0_0_35px_rgba(0,240,255,0.25)]">
         <div className="absolute inset-0 cyber-grid opacity-25 pointer-events-none" />
 
-        {/* Hero Title & Class */}
-        <div className="relative text-center space-y-1 mb-2">
+        {/* Hero Avatar Crest & Title */}
+        <div className="relative flex flex-col items-center text-center space-y-2 mb-2">
+          {/* Clickable Pixel Avatar Badge */}
+          <button
+            type="button"
+            onClick={() => {
+              sound.playClick();
+              onOpenAvatarCustomizer?.();
+            }}
+            title="Click to customize appearance"
+            className="group relative flex h-20 w-20 items-center justify-center rounded-2xl border-2 border-cyan-400 bg-gradient-to-b from-indigo-950 to-slate-950 shadow-[0_0_20px_rgba(0,240,255,0.4)] hover:scale-105 transition-transform overflow-hidden"
+          >
+            <PixelAvatar config={hero.avatar || DEFAULT_AVATAR} size={64} />
+            <div className="absolute inset-0 bg-cyan-950/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[10px] font-black text-cyan-300 transition-opacity">
+              EDIT
+            </div>
+            <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-purple-400 bg-purple-900 text-[9px] font-black text-purple-200">
+              {hero.level}
+            </span>
+          </button>
+
           <div className="inline-flex items-center gap-1.5 rounded-md border border-cyan-400 bg-cyan-950/80 px-2.5 py-0.5 text-[10px] font-black text-cyan-300 shadow-[0_0_10px_rgba(0,240,255,0.5)]">
             <Swords className="w-3 h-3 text-cyan-300" />
             <span>LVL {hero.level} CHRONO-KNIGHT</span>
@@ -151,6 +182,18 @@ export const CharacterMatrixView: React.FC<CharacterMatrixViewProps> = ({
           <p className="text-[11px] text-purple-300 font-sans">
             {hero.specialization}
           </p>
+
+          <button
+            type="button"
+            onClick={() => {
+              sound.playClick();
+              onOpenAvatarCustomizer?.();
+            }}
+            className="mt-1 flex items-center gap-1.5 rounded-xl border border-purple-500/80 bg-purple-950/60 px-3 py-1 text-[11px] font-bold text-purple-200 hover:border-cyan-400 hover:text-white transition-all shadow-sm"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>Customize Character Avatar</span>
+          </button>
         </div>
 
         {/* Hexagonal Stats Radar */}

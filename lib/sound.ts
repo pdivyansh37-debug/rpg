@@ -434,6 +434,10 @@ class SoundEngine {
     });
   }
 
+  public playHeal() {
+    this.playPotion();
+  }
+
   public playBossGate() {
     this.playBossAttack();
   }
