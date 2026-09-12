@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { HeroHud } from '@/components/hero-hud';
 import { QuestsHubView } from '@/components/quests-hub-view';
 import { CharacterMatrixView } from '@/components/character-matrix-view';
@@ -258,6 +259,9 @@ const INITIAL_OBJECTIVES: StartingObjective[] = [
 ];
 
 export default function MasterHeroQuestApp() {
+  const router = useRouter();
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+
   const [hero, setHero] = useState<HeroState>(INITIAL_HERO);
   const [quests, setQuests] = useState<CyberQuest[]>(INITIAL_QUESTS);
   const [habits, setHabits] = useState<HabitItem[]>(INITIAL_HABITS);
@@ -342,9 +346,34 @@ export default function MasterHeroQuestApp() {
     }, 45000); // 45s combo window
   };
 
-  // Listen to Supabase Auth State
+  // Check Authentication on initial app open - redirect to /login if not authenticated or guest
   useEffect(() => {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured) {
+      setIsAuthChecking(false);
+      return;
+    }
+
+    const isGuestAllowed =
+      typeof window !== 'undefined' && sessionStorage.getItem('guest_mode') === 'true';
+
+    // Fast check: if no Supabase session token in localStorage and not guest, redirect to /login immediately
+    let hasStoredSession = false;
+    try {
+      if (typeof window !== 'undefined') {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.startsWith('sb-') || key.includes('supabase.auth.token'))) {
+            hasStoredSession = true;
+            break;
+          }
+        }
+      }
+    } catch {}
+
+    if (!hasStoredSession && !isGuestAllowed) {
+      router.replace('/login');
+      return;
+    }
 
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
@@ -365,6 +394,11 @@ export default function MasterHeroQuestApp() {
             user.email?.split('@')[0] ||
             h.username,
         }));
+        setIsAuthChecking(false);
+      } else if (isGuestAllowed) {
+        setIsAuthChecking(false);
+      } else {
+        router.replace('/login');
       }
     });
 
@@ -389,19 +423,26 @@ export default function MasterHeroQuestApp() {
             session.user.email?.split('@')[0] ||
             h.username,
         }));
+        setIsAuthChecking(false);
       } else {
-        setCurrentUser({
-          id: 'user-1',
-          email: null,
-          username: 'Nexus Operator',
-          avatarUrl: null,
-          isGuest: true,
-        });
+        const isGuestAllowed =
+          typeof window !== 'undefined' && sessionStorage.getItem('guest_mode') === 'true';
+        if (!isGuestAllowed) {
+          router.replace('/login');
+        } else {
+          setCurrentUser({
+            id: 'user-1',
+            email: null,
+            username: 'Nexus Operator',
+            avatarUrl: null,
+            isGuest: true,
+          });
+        }
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [router]);
 
   // Synchronize isolated player data from Supabase whenever active user changes
   useEffect(() => {
@@ -767,6 +808,24 @@ export default function MasterHeroQuestApp() {
     }));
   };
 
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen bg-[#070514] font-mono text-slate-100 flex flex-col items-center justify-center p-4">
+        <div className="relative flex flex-col items-center space-y-4">
+          <div className="h-16 w-16 rounded-2xl border-2 border-cyan-400 bg-cyan-950/60 p-3 shadow-[0_0_30px_rgba(0,240,255,0.6)] flex items-center justify-center animate-pulse">
+            <span className="text-2xl">🛡️</span>
+          </div>
+          <div className="text-center space-y-1">
+            <p className="text-xs font-black tracking-widest text-cyan-400 uppercase">
+              // NEXUS MATRIX INITIALIZING...
+            </p>
+            <p className="text-[11px] text-slate-400">Verifying Operator Security Credentials</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#070512] text-slate-100 selection:bg-cyan-500 selection:text-slate-950 font-sans pb-28 relative overflow-x-hidden">
       {/* Red Hit Flash Overlay when taking damage */}
@@ -902,7 +961,13 @@ export default function MasterHeroQuestApp() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         currentUser={currentUser}
-        onSignOut={() => {
+        onSignOut={async () => {
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('guest_mode');
+          }
+          if (isSupabaseConfigured) {
+            await supabase.auth.signOut();
+          }
           setCurrentUser({
             id: 'user-1',
             email: null,
@@ -915,6 +980,7 @@ export default function MasterHeroQuestApp() {
           setHabits(INITIAL_HABITS);
           setDailies(INITIAL_DAILIES);
           setTodos(INITIAL_TODOS);
+          router.replace('/login');
         }}
       />
 

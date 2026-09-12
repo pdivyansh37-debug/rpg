@@ -15,7 +15,9 @@ import {
   AlertCircle,
   Skull,
   Gift,
-  Radio,
+  User,
+  LogIn,
+  UserPlus,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
@@ -24,7 +26,7 @@ import { sound } from '@/lib/sound';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [authMode, setAuthMode] = useState<'GOOGLE' | 'EMAIL' | 'SIGNUP'>('GOOGLE');
+  const [authMode, setAuthMode] = useState<'SIGNIN' | 'SIGNUP' | 'GOOGLE'>('SIGNIN');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
@@ -51,7 +53,7 @@ export default function LoginPage() {
     try {
       if (!isSupabaseConfigured) {
         setErrorMessage(
-          'Supabase environment variables not configured in .env.local yet. You can click "Enter as Guest Operator" below!'
+          'Supabase environment variables not configured. You can click "Enter as Guest Operator" below!'
         );
         setIsLoading(false);
         return;
@@ -140,6 +142,9 @@ export default function LoginPage() {
 
   const handleGuestLogin = () => {
     sound.playClick();
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('guest_mode', 'true');
+    }
     router.push('/');
   };
 
@@ -165,7 +170,7 @@ export default function LoginPage() {
           <div>
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-black tracking-widest text-cyan-400 uppercase">
-                // SYSTEM LOGIN
+                // SYSTEM GATEWAY
               </span>
               <span className="rounded border border-pink-500/80 bg-pink-950/70 px-1 py-0.2 text-[8px] font-black text-pink-300">
                 PROD-V1
@@ -186,27 +191,33 @@ export default function LoginPage() {
         </button>
       </header>
 
-      {/* Central Login Card */}
-      <main className="relative z-10 mx-auto w-full max-w-md py-6 sm:py-8">
+      {/* Central Auth Card */}
+      <main className="relative z-10 mx-auto w-full max-w-md py-4 sm:py-6">
         <motion.div
-          initial={{ opacity: 0, y: 25, scale: 0.95 }}
+          initial={{ opacity: 0, y: 20, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="relative overflow-hidden rounded-3xl border-2 border-cyan-500/40 bg-[#0e0a24]/95 p-6 sm:p-8 shadow-[0_0_50px_rgba(0,240,255,0.2)] backdrop-blur-xl"
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+          className="relative overflow-hidden rounded-3xl border-2 border-cyan-500/40 bg-[#0e0a24]/95 p-6 sm:p-7 shadow-[0_0_50px_rgba(0,240,255,0.2)] backdrop-blur-xl"
         >
           {/* Top Neon Scanline */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 shadow-[0_0_12px_rgba(0,240,255,0.8)]" />
 
           {/* Title Header */}
-          <div className="text-center space-y-1.5 mb-6">
+          <div className="text-center space-y-1 mb-5">
             <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400">
-              [ NEXUS OPERATOR ACCESS ]
+              [ OPERATOR ACCESS PORTAL ]
             </span>
             <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Enter The Matrix
+              {authMode === 'SIGNUP'
+                ? 'Create New Operator'
+                : authMode === 'SIGNIN'
+                ? 'Sign In to Matrix'
+                : 'Google Fast Access'}
             </h2>
             <p className="text-xs text-slate-400 leading-relaxed max-w-xs mx-auto">
-              Sync habits, real-time HP stakes, character progression, and loot crates across all devices.
+              {authMode === 'SIGNUP'
+                ? 'Register your profile to preserve quest streaks, HP stakes, and inventory.'
+                : 'Sign in to access your personal character sheet, dailies, and boss raids.'}
             </p>
           </div>
 
@@ -225,40 +236,63 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Auth Tab Switcher */}
-          <div className="grid grid-cols-2 gap-1.5 rounded-2xl border border-indigo-950 bg-[#070414] p-1 text-xs font-bold mb-5">
+          {/* 3-Way Auth Tab Switcher (Sign In, Sign Up, Google) */}
+          <div className="grid grid-cols-3 gap-1 rounded-2xl border border-indigo-950 bg-[#070414] p-1 text-[11px] font-bold mb-5">
             <button
+              type="button"
               onClick={() => {
                 sound.playClick();
-                setAuthMode('GOOGLE');
+                setAuthMode('SIGNIN');
+                setErrorMessage(null);
               }}
-              className={`rounded-xl py-2 transition-all ${
-                authMode === 'GOOGLE'
+              className={`flex items-center justify-center gap-1.5 rounded-xl py-2 transition-all ${
+                authMode === 'SIGNIN'
                   ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black shadow-[0_0_12px_rgba(0,240,255,0.5)]'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Google Auth
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Sign In</span>
             </button>
             <button
+              type="button"
               onClick={() => {
                 sound.playClick();
-                setAuthMode('EMAIL');
+                setAuthMode('SIGNUP');
+                setErrorMessage(null);
               }}
-              className={`rounded-xl py-2 transition-all ${
-                authMode === 'EMAIL' || authMode === 'SIGNUP'
+              className={`flex items-center justify-center gap-1.5 rounded-xl py-2 transition-all ${
+                authMode === 'SIGNUP'
                   ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white font-black shadow-[0_0_12px_rgba(168,85,247,0.5)]'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Email Sign In
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Sign Up</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                sound.playClick();
+                setAuthMode('GOOGLE');
+                setErrorMessage(null);
+              }}
+              className={`flex items-center justify-center gap-1.5 rounded-xl py-2 transition-all ${
+                authMode === 'GOOGLE'
+                  ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 font-black shadow-[0_0_12px_rgba(251,191,36,0.5)]'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <span>Google</span>
             </button>
           </div>
 
+          {/* Form Content */}
           {authMode === 'GOOGLE' ? (
             /* Google OAuth Primary View */
             <div className="space-y-4">
               <button
+                type="button"
                 onClick={handleGoogleSignIn}
                 disabled={isLoading}
                 className="group relative w-full flex items-center justify-center gap-3 rounded-2xl bg-white px-5 py-4 text-sm font-black text-slate-900 shadow-[0_0_25px_rgba(255,255,255,0.3)] transition-all hover:bg-slate-100 hover:shadow-[0_0_35px_rgba(255,255,255,0.6)] active:scale-[0.98] disabled:opacity-50"
@@ -294,21 +328,24 @@ export default function LoginPage() {
               </div>
             </div>
           ) : (
-            /* Email & Password Form */
+            /* Email & Password Form (Sign In or Sign Up) */
             <form onSubmit={handleEmailAuth} className="space-y-3.5">
               {authMode === 'SIGNUP' && (
                 <div>
                   <label className="block text-[11px] font-bold text-slate-300 mb-1">
                     Operator Handle (Username)
                   </label>
-                  <input
-                    type="text"
-                    required
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="e.g. CyberKnight_42"
-                    className="w-full rounded-xl border border-indigo-900 bg-[#140e36] px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none"
-                  />
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                    <input
+                      type="text"
+                      required
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="e.g. CyberKnight_42"
+                      className="w-full rounded-xl border border-indigo-900 bg-[#140e36] pl-9 pr-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none"
+                    />
+                  </div>
                 </div>
               )}
 
@@ -349,23 +386,57 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 py-3.5 text-xs font-black text-slate-950 shadow-[0_0_20px_rgba(236,72,153,0.5)] transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                className={`w-full flex items-center justify-center gap-2 rounded-2xl py-3.5 text-xs font-black text-slate-950 shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 ${
+                  authMode === 'SIGNUP'
+                    ? 'bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 shadow-[0_0_20px_rgba(236,72,153,0.5)]'
+                    : 'bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 shadow-[0_0_20px_rgba(0,240,255,0.5)]'
+                }`}
               >
                 <span>
                   {isLoading
                     ? 'Processing...'
                     : authMode === 'SIGNUP'
                     ? 'Create Operator Account'
-                    : 'Authenticate & Enter'}
+                    : 'Sign In & Enter Matrix'}
                 </span>
                 <ArrowRight className="w-4 h-4" />
               </button>
 
+              {/* Quick Google Alt Button */}
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                className="w-full flex items-center justify-center gap-2 rounded-xl border border-indigo-900 bg-[#100b2b] py-2 text-xs text-slate-300 hover:border-cyan-400 hover:text-white transition-all"
+              >
+                <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                  />
+                </svg>
+                <span>Or Continue with Google</span>
+              </button>
+
               <div className="text-center pt-1 text-xs">
-                {authMode === 'EMAIL' ? (
+                {authMode === 'SIGNIN' ? (
                   <button
                     type="button"
-                    onClick={() => setAuthMode('SIGNUP')}
+                    onClick={() => {
+                      sound.playClick();
+                      setAuthMode('SIGNUP');
+                    }}
                     className="text-cyan-400 hover:underline font-bold"
                   >
                     Need an account? Inscribe now &rarr;
@@ -373,7 +444,10 @@ export default function LoginPage() {
                 ) : (
                   <button
                     type="button"
-                    onClick={() => setAuthMode('EMAIL')}
+                    onClick={() => {
+                      sound.playClick();
+                      setAuthMode('SIGNIN');
+                    }}
                     className="text-purple-400 hover:underline font-bold"
                   >
                     Already registered? Sign in &rarr;
@@ -384,10 +458,11 @@ export default function LoginPage() {
           )}
 
           {/* Quick Guest Mode Divider */}
-          <div className="relative mt-6 pt-4 border-t border-indigo-950 text-center">
+          <div className="relative mt-5 pt-4 border-t border-indigo-950 text-center">
             <button
+              type="button"
               onClick={handleGuestLogin}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl border border-indigo-800/80 bg-[#120c2e] py-3 text-xs font-bold text-slate-300 hover:border-cyan-400 hover:text-white transition-all shadow-sm"
+              className="w-full flex items-center justify-center gap-2 rounded-2xl border border-indigo-800/80 bg-[#120c2e] py-2.5 text-xs font-bold text-slate-300 hover:border-cyan-400 hover:text-white transition-all shadow-sm"
             >
               <Zap className="w-4 h-4 text-amber-400" />
               <span>Enter as Guest Operator (Offline Demo)</span>
@@ -396,7 +471,7 @@ export default function LoginPage() {
         </motion.div>
 
         {/* Highlight Badges / Features Grid */}
-        <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-[10px] text-slate-400">
+        <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-[10px] text-slate-400">
           <div className="rounded-2xl border border-indigo-950 bg-[#0d0920]/80 p-2.5 space-y-1">
             <Flame className="w-4 h-4 text-amber-400 mx-auto" />
             <div className="font-black text-white">Combo Streaks</div>
