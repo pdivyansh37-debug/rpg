@@ -10,8 +10,11 @@ export async function GET(request: Request) {
 
     if (code) {
       const cookieStore = await cookies();
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://vdozekkkbypwrbecauta.supabase.co';
+      const supabaseAnonKey =
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+        'sb_publishable_TunFXBZtibrD1gNA0mwAfA_240X6Qmm';
 
       const supabase = createServerClient(
         supabaseUrl,

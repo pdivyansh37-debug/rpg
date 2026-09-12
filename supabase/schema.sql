@@ -1,6 +1,6 @@
 -- ============================================================================
 -- LIFE RPG: SUPABASE POSTGRESQL DATABASE SCHEMA
--- Project URL: https://axohgdwrwncznynmltta.supabase.co
+-- Project URL: https://vdozekkkbypwrbecauta.supabase.co
 -- ============================================================================
 
 -- Enable UUID extension
@@ -14,17 +14,17 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(100) NOT NULL DEFAULT 'Nexus Operator',
     class_title VARCHAR(100) NOT NULL DEFAULT 'CHRONO-KNIGHT',
     specialization VARCHAR(150) DEFAULT 'Cyber-Focus Kinetic Synthesis',
-    level INT NOT NULL DEFAULT 14,
-    hp INT NOT NULL DEFAULT 780,
+    level INT NOT NULL DEFAULT 1,
+    hp INT NOT NULL DEFAULT 800,
     max_hp INT NOT NULL DEFAULT 800,
-    xp INT NOT NULL DEFAULT 3850,
-    next_level_xp INT NOT NULL DEFAULT 4000,
-    total_xp INT NOT NULL DEFAULT 18450,
-    gold INT NOT NULL DEFAULT 1420,
-    cyber_shards INT NOT NULL DEFAULT 48,
-    streak_count INT NOT NULL DEFAULT 7,
-    longest_streak INT NOT NULL DEFAULT 14,
-    unspent_skill_points INT NOT NULL DEFAULT 2,
+    xp INT NOT NULL DEFAULT 0,
+    next_level_xp INT NOT NULL DEFAULT 1000,
+    total_xp INT NOT NULL DEFAULT 0,
+    gold INT NOT NULL DEFAULT 0,
+    cyber_shards INT NOT NULL DEFAULT 0,
+    streak_count INT NOT NULL DEFAULT 0,
+    longest_streak INT NOT NULL DEFAULT 0,
+    unspent_skill_points INT NOT NULL DEFAULT 0,
     is_overclocked BOOLEAN NOT NULL DEFAULT FALSE,
     vitality_bonus NUMERIC(4, 1) DEFAULT 12.8,
     surge_bonus NUMERIC(4, 1) DEFAULT 18.0,
@@ -133,7 +133,7 @@ CREATE POLICY "Public Insert Inventory" ON inventory FOR INSERT WITH CHECK (true
 -- ----------------------------------------------------------------------------
 -- Insert Default Hero if not exists
 INSERT INTO users (id, username, class_title, specialization, level, hp, max_hp, xp, next_level_xp, total_xp, gold, cyber_shards, streak_count, unspent_skill_points)
-VALUES ('00000000-0000-0000-0000-000000000001', 'Nexus Operator', 'CHRONO-KNIGHT', 'Cyber-Focus Kinetic Synthesis', 14, 780, 800, 3850, 4000, 18450, 1420, 48, 7, 2)
+VALUES ('00000000-0000-0000-0000-000000000001', 'Nexus Operator', 'CHRONO-KNIGHT', 'Cyber-Focus Kinetic Synthesis', 1, 800, 800, 0, 1000, 0, 0, 0, 0, 0)
 ON CONFLICT (id) DO NOTHING;
 
 -- Insert Hero Attributes
