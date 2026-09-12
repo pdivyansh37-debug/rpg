@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { initUserIfMissing } from '@/lib/supabase-service';
 import { sound } from '@/lib/sound';
 
 export default function LoginPage() {
@@ -96,7 +97,7 @@ export default function LoginPage() {
 
     try {
       if (authMode === 'SIGNUP') {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -108,18 +109,24 @@ export default function LoginPage() {
         if (error) {
           setErrorMessage(error.message);
         } else {
-          setSuccessMessage('Registration successful! Check your inbox to confirm or proceed.');
+          if (data.user) {
+            await initUserIfMissing(data.user);
+          }
+          setSuccessMessage('Registration successful! Identity initialized in the matrix.');
           sound.playSkillUnlock();
-          setTimeout(() => router.push('/'), 1500);
+          setTimeout(() => router.push('/'), 1200);
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) {
           setErrorMessage(error.message);
         } else {
+          if (data.user) {
+            await initUserIfMissing(data.user);
+          }
           sound.playSkillUnlock();
           router.push('/');
         }

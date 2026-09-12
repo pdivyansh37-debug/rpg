@@ -30,6 +30,14 @@ import {
   fetchQuestsFromDb,
   insertQuestToDb,
   toggleQuestInDb,
+  deleteQuestInDb,
+  fetchHabitsFromDb,
+  updateHabitCountInDb,
+  fetchDailiesFromDb,
+  toggleDailyInDb,
+  fetchTodosFromDb,
+  toggleTodoInDb,
+  initUserIfMissing,
   claimAllQuestsInDb,
 } from '@/lib/supabase-service';
 import confetti from 'canvas-confetti';
@@ -395,19 +403,42 @@ export default function MasterHeroQuestApp() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Sync state from Supabase on mount
+  // Synchronize isolated player data from Supabase whenever active user changes
   useEffect(() => {
-    async function loadData() {
-      const [dbHero, dbQuests] = await Promise.all([
+    async function loadUserData() {
+      if (currentUser.isGuest || !isSupabaseConfigured) return;
+
+      await initUserIfMissing({
+        id: currentUser.id,
+        email: currentUser.email,
+        user_metadata: { username: currentUser.username, avatar_url: currentUser.avatarUrl },
+      });
+
+      const [dbHero, dbQuests, dbHabits, dbDailies, dbTodos] = await Promise.all([
         fetchHeroFromDb(),
         fetchQuestsFromDb(),
+        fetchHabitsFromDb(),
+        fetchDailiesFromDb(),
+        fetchTodosFromDb(),
       ]);
 
       if (dbHero) setHero(dbHero);
       if (dbQuests && dbQuests.length > 0) setQuests(dbQuests);
+      if (dbHabits && dbHabits.length > 0) setHabits(dbHabits);
+      if (dbDailies && dbDailies.length > 0) setDailies(dbDailies);
+      if (dbTodos && dbTodos.length > 0) setTodos(dbTodos);
     }
-    loadData();
-  }, []);
+    loadUserData();
+  }, [currentUser.id, currentUser.isGuest]);
+
+  // Debounced auto-sync hero profile and attributes to Supabase
+  useEffect(() => {
+    if (currentUser.isGuest || !isSupabaseConfigured) return;
+    const timer = setTimeout(() => {
+      saveHeroToDb(hero);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [hero, currentUser.isGuest]);
 
   // Check for HP depletion / Hero Faint
   useEffect(() => {
@@ -435,9 +466,12 @@ export default function MasterHeroQuestApp() {
     bumpCombo(x, y);
     checkLootDrop(x, y);
 
+    const nextPosCount = (habit.positiveCount || 0) + 1;
+    updateHabitCountInDb(habit.id, nextPosCount, habit.negativeCount || 0);
+
     setHabits((prev) =>
       prev.map((h) =>
-        h.id === habit.id ? { ...h, positiveCount: (h.positiveCount || 0) + 1 } : h
+        h.id === habit.id ? { ...h, positiveCount: nextPosCount } : h
       )
     );
 
@@ -502,9 +536,12 @@ export default function MasterHeroQuestApp() {
     addCombatText(x, y, `-${damageAmount} HP!`, 'DAMAGE');
     setComboMultiplier(1.0);
 
+    const nextNegCount = (habit.negativeCount || 0) + 1;
+    updateHabitCountInDb(habit.id, habit.positiveCount || 0, nextNegCount);
+
     setHabits((prev) =>
       prev.map((h) =>
-        h.id === habit.id ? { ...h, negativeCount: (h.negativeCount || 0) + 1 } : h
+        h.id === habit.id ? { ...h, negativeCount: nextNegCount } : h
       )
     );
 
@@ -522,6 +559,7 @@ export default function MasterHeroQuestApp() {
 
     const updatedCompleted = !daily.completed;
     const updatedStreak = updatedCompleted ? daily.streak + 1 : Math.max(0, daily.streak - 1);
+    toggleDailyInDb(daily.id, updatedCompleted, updatedStreak);
 
     setDailies((prev) =>
       prev.map((d) =>
@@ -560,6 +598,7 @@ export default function MasterHeroQuestApp() {
     const y = rect.top;
 
     const updatedCompleted = !todo.completed;
+    toggleTodoInDb(todo.id, updatedCompleted);
 
     setTodos((prev) =>
       prev.map((t) => (t.id === todo.id ? { ...t, completed: updatedCompleted } : t))
@@ -871,6 +910,11 @@ export default function MasterHeroQuestApp() {
             avatarUrl: null,
             isGuest: true,
           });
+          setHero(INITIAL_HERO);
+          setQuests(INITIAL_QUESTS);
+          setHabits(INITIAL_HABITS);
+          setDailies(INITIAL_DAILIES);
+          setTodos(INITIAL_TODOS);
         }}
       />
 

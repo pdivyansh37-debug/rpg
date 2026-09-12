@@ -126,23 +126,39 @@ export const HeroHud: React.FC<HeroHudProps> = ({
               <span>{hero.streakCount}D</span>
             </div>
 
-            {/* Google / Account Auth Button */}
+            {/* Account & Session Status Button */}
             <button
               onClick={() => {
                 sound.playClick();
                 onAuthClick?.();
               }}
-              title={currentUser && !currentUser.isGuest ? 'Google Account Linked' : 'Sign in with Google'}
+              title={
+                currentUser && !currentUser.isGuest
+                  ? `Authenticated as ${currentUser.username} (Click to manage/sign out)`
+                  : 'Sign In / Sign Up to isolate and sync data'
+              }
               className={`flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-bold transition-all ${
                 currentUser && !currentUser.isGuest
-                  ? 'border border-emerald-500/80 bg-emerald-950/70 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
-                  : 'border border-cyan-500/80 bg-cyan-950/70 text-cyan-300 hover:border-cyan-400 hover:bg-cyan-900/80'
+                  ? 'border border-emerald-500/80 bg-emerald-950/70 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.35)]'
+                  : 'border border-cyan-500/80 bg-cyan-950/70 text-cyan-300 hover:border-cyan-400 hover:bg-cyan-900/80 shadow-[0_0_8px_rgba(0,240,255,0.2)]'
               }`}
             >
-              <LogIn className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">
-                {currentUser && !currentUser.isGuest ? 'Cloud Sync' : 'Google Auth'}
-              </span>
+              {currentUser && !currentUser.isGuest ? (
+                <>
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+                  <span className="hidden sm:inline truncate max-w-[90px]">
+                    {currentUser.username}
+                  </span>
+                  <span className="text-[10px] rounded bg-emerald-900/80 px-1 text-emerald-300">
+                    SYNC
+                  </span>
+                </>
+              ) : (
+                <>
+                  <LogIn className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Sign In / Up</span>
+                </>
+              )}
             </button>
 
             {/* Profile Ring Button */}
