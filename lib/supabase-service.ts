@@ -5,16 +5,33 @@ import { CyberQuest } from '@/components/quest-card';
 const DEMO_USER_ID = '00000000-0000-0000-0000-000000000001';
 
 /**
+ * Gets currently logged-in user ID or falls back to demo guest ID
+ */
+export async function getCurrentUserId(): Promise<string> {
+  if (!isSupabaseConfigured) return DEMO_USER_ID;
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    return user?.id || DEMO_USER_ID;
+  } catch {
+    return DEMO_USER_ID;
+  }
+}
+
+/**
  * Fetch Hero profile and stats from Supabase
  */
 export async function fetchHeroFromDb(): Promise<HeroState | null> {
   if (!isSupabaseConfigured) return null;
 
   try {
+    const userId = await getCurrentUserId();
+
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('*')
-      .eq('id', DEMO_USER_ID)
+      .eq('id', userId)
       .maybeSingle();
 
     if (userError || !user) return null;
@@ -22,14 +39,14 @@ export async function fetchHeroFromDb(): Promise<HeroState | null> {
     const { data: attrs } = await supabase
       .from('user_attributes')
       .select('*')
-      .eq('user_id', DEMO_USER_ID)
+      .eq('user_id', userId)
       .maybeSingle();
 
     return {
       id: user.id,
       username: user.username,
-      classTitle: user.class_title,
-      specialization: user.specialization,
+      classTitle: user.class_title || 'CHRONO-KNIGHT',
+      specialization: user.specialization || 'Cyber-Focus Kinetic Synthesis',
       level: user.level,
       hp: user.hp,
       maxHp: user.max_hp,
@@ -66,6 +83,8 @@ export async function saveHeroToDb(hero: HeroState): Promise<boolean> {
   if (!isSupabaseConfigured) return false;
 
   try {
+    const userId = await getCurrentUserId();
+
     const { error: userError } = await supabase
       .from('users')
       .update({
@@ -82,7 +101,7 @@ export async function saveHeroToDb(hero: HeroState): Promise<boolean> {
         is_overclocked: hero.isOverclocked,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', DEMO_USER_ID);
+      .eq('id', userId);
 
     if (hero.radar) {
       await supabase
@@ -96,7 +115,7 @@ export async function saveHeroToDb(hero: HeroState): Promise<boolean> {
           void: hero.radar.void,
           updated_at: new Date().toISOString(),
         })
-        .eq('user_id', DEMO_USER_ID);
+        .eq('user_id', userId);
     }
 
     return !userError;
@@ -113,10 +132,12 @@ export async function fetchQuestsFromDb(): Promise<CyberQuest[] | null> {
   if (!isSupabaseConfigured) return null;
 
   try {
+    const userId = await getCurrentUserId();
+
     const { data, error } = await supabase
       .from('quests')
       .select('*')
-      .eq('user_id', DEMO_USER_ID)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
     if (error || !data || data.length === 0) return null;
@@ -150,10 +171,12 @@ export async function insertQuestToDb(quest: CyberQuest): Promise<string | null>
   if (!isSupabaseConfigured) return null;
 
   try {
+    const userId = await getCurrentUserId();
+
     const { data, error } = await supabase
       .from('quests')
       .insert({
-        user_id: DEMO_USER_ID,
+        user_id: userId,
         title: quest.title,
         description: quest.description,
         difficulty: quest.difficulty,
@@ -208,6 +231,8 @@ export async function claimAllQuestsInDb(): Promise<boolean> {
   if (!isSupabaseConfigured) return false;
 
   try {
+    const userId = await getCurrentUserId();
+
     const { error } = await supabase
       .from('quests')
       .update({
@@ -215,7 +240,7 @@ export async function claimAllQuestsInDb(): Promise<boolean> {
         completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
-      .eq('user_id', DEMO_USER_ID)
+      .eq('user_id', userId)
       .eq('completed', false);
 
     return !error;

@@ -12,6 +12,8 @@ import {
   User,
   Radio,
   Zap,
+  LogIn,
+  Heart,
 } from 'lucide-react';
 import { sound } from '@/lib/sound';
 import { ThemeToggle } from './theme-toggle';
@@ -29,10 +31,23 @@ export interface HeroHudProps {
     maxHp?: number;
     avatarUrl?: string | null;
   };
+  comboMultiplier?: number;
+  currentUser?: {
+    username: string;
+    email?: string | null;
+    isGuest: boolean;
+  };
   onProfileClick?: () => void;
+  onAuthClick?: () => void;
 }
 
-export const HeroHud: React.FC<HeroHudProps> = ({ hero, onProfileClick }) => {
+export const HeroHud: React.FC<HeroHudProps> = ({
+  hero,
+  comboMultiplier = 1.0,
+  currentUser,
+  onProfileClick,
+  onAuthClick,
+}) => {
   const [isMuted, setIsMuted] = useState(sound.getMuted());
 
   const toggleSound = () => {
@@ -46,8 +61,12 @@ export const HeroHud: React.FC<HeroHudProps> = ({ hero, onProfileClick }) => {
     Math.max(0, Math.round((hero.currentXp / hero.nextLevelXp) * 100))
   );
 
+  const hpVal = hero.hp ?? 800;
+  const maxHpVal = hero.maxHp ?? 800;
+  const hpPercent = Math.min(100, Math.max(0, Math.round((hpVal / maxHpVal) * 100)));
+
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-indigo-950/80 bg-white/90 dark:bg-[#0c0c1e]/90 backdrop-blur-md shadow-sm dark:shadow-2xl transition-colors duration-200">
+    <header className="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-indigo-950/80 bg-white/90 dark:bg-[#0c0c1e]/90 backdrop-blur-md shadow-sm dark:shadow-2xl transition-colors duration-200 font-mono">
       <div className="mx-auto max-w-5xl px-3 py-2.5 sm:px-6">
         {/* Top Header Row */}
         <div className="flex items-center justify-between gap-2">
@@ -79,8 +98,20 @@ export const HeroHud: React.FC<HeroHudProps> = ({ hero, onProfileClick }) => {
             </div>
           </div>
 
-          {/* Right: Gold Stash, Streak Pill, Profile Avatar, SFX */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5">
+          {/* Right: Combo multiplier, Gold, Streak, Auth, SFX */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Active Combo Multiplier Pill */}
+            {comboMultiplier > 1.0 && (
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="flex items-center gap-1 rounded-full border border-purple-400 bg-purple-950/90 px-2 py-0.5 text-[11px] font-black text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.6)] animate-pulse"
+              >
+                <Zap className="w-3 h-3 text-yellow-300" />
+                <span>x{comboMultiplier.toFixed(1)} COMBO</span>
+              </motion.div>
+            )}
+
             {/* Gold Pill Badge */}
             <div className="flex items-center gap-1.5 rounded-full border border-amber-500/80 bg-gradient-to-r from-amber-950/80 to-slate-900/90 px-2.5 py-1 text-xs font-mono font-black text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.25)]">
               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[10px] text-slate-950 font-black">
@@ -94,6 +125,25 @@ export const HeroHud: React.FC<HeroHudProps> = ({ hero, onProfileClick }) => {
               <Flame className="h-3.5 w-3.5 text-orange-400 animate-pulse" />
               <span>{hero.streakCount}D</span>
             </div>
+
+            {/* Google / Account Auth Button */}
+            <button
+              onClick={() => {
+                sound.playClick();
+                onAuthClick?.();
+              }}
+              title={currentUser && !currentUser.isGuest ? 'Google Account Linked' : 'Sign in with Google'}
+              className={`flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-bold transition-all ${
+                currentUser && !currentUser.isGuest
+                  ? 'border border-emerald-500/80 bg-emerald-950/70 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                  : 'border border-cyan-500/80 bg-cyan-950/70 text-cyan-300 hover:border-cyan-400 hover:bg-cyan-900/80'
+              }`}
+            >
+              <LogIn className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">
+                {currentUser && !currentUser.isGuest ? 'Cloud Sync' : 'Google Auth'}
+              </span>
+            </button>
 
             {/* Profile Ring Button */}
             <button
@@ -121,26 +171,48 @@ export const HeroHud: React.FC<HeroHudProps> = ({ hero, onProfileClick }) => {
           </div>
         </div>
 
-        {/* Synapse Progression Bar */}
-        <div className="mt-2.5 pt-1.5 border-t border-indigo-950/60">
-          <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-mono mb-1">
-            <span className="text-purple-400 font-bold tracking-wider flex items-center gap-1">
-              <Radio className="w-3 h-3 text-purple-400 animate-pulse" />
-              SYNAPSE PROGRESSION
-            </span>
-            <span className="text-cyan-300 font-extrabold tracking-wide">
-              {hero.currentXp.toLocaleString()} / {hero.nextLevelXp.toLocaleString()} XP ({xpPercent}%)
-            </span>
+        {/* Dual Gauges: Health (HP) & Synapse XP */}
+        <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1.5 border-t border-indigo-950/60">
+          {/* Health Gauge */}
+          <div>
+            <div className="flex items-center justify-between text-[10px] font-mono mb-0.5">
+              <span className="text-rose-400 font-bold flex items-center gap-1">
+                <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
+                VITALITY MATRIX
+              </span>
+              <span className="text-rose-300 font-extrabold">
+                {hpVal} / {maxHpVal} HP
+              </span>
+            </div>
+            <div className="relative h-1.5 w-full overflow-hidden rounded-full border border-rose-950 bg-[#16050b]">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${hpPercent}%` }}
+                transition={{ type: 'spring', damping: 15, stiffness: 100 }}
+                className="h-full rounded-full bg-gradient-to-r from-rose-600 to-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.7)]"
+              />
+            </div>
           </div>
 
-          {/* Glowing Gradient Bar */}
-          <div className="relative h-2 w-full overflow-hidden rounded-full border border-indigo-900/60 bg-[#090918]">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${xpPercent}%` }}
-              transition={{ type: 'spring', damping: 15, stiffness: 100 }}
-              className="h-full rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-400 shadow-[0_0_12px_rgba(236,72,153,0.75)]"
-            />
+          {/* Synapse XP Gauge */}
+          <div>
+            <div className="flex items-center justify-between text-[10px] font-mono mb-0.5">
+              <span className="text-purple-400 font-bold flex items-center gap-1">
+                <Radio className="w-3 h-3 text-purple-400 animate-pulse" />
+                SYNAPSE PROGRESSION
+              </span>
+              <span className="text-cyan-300 font-extrabold">
+                {hero.currentXp.toLocaleString()} / {hero.nextLevelXp.toLocaleString()} XP ({xpPercent}%)
+              </span>
+            </div>
+            <div className="relative h-1.5 w-full overflow-hidden rounded-full border border-indigo-900/60 bg-[#090918]">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${xpPercent}%` }}
+                transition={{ type: 'spring', damping: 15, stiffness: 100 }}
+                className="h-full rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-400 shadow-[0_0_10px_rgba(236,72,153,0.75)]"
+              />
+            </div>
           </div>
         </div>
       </div>

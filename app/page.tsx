@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HeroHud } from '@/components/hero-hud';
 import { QuestsHubView } from '@/components/quests-hub-view';
@@ -9,9 +9,21 @@ import { ArmoryBazaarView } from '@/components/armory-bazaar-view';
 import { WorldBossView } from '@/components/world-boss-view';
 import { CyberBottomNav, MainTabType } from '@/components/cyber-bottom-nav';
 import { CreateQuestModal } from '@/components/create-quest-modal';
+import { AuthModal } from '@/components/auth-modal';
+import { HeroFaintModal } from '@/components/hero-faint-modal';
+import { LootCrateModal, LootReward } from '@/components/loot-crate-modal';
+import { FloatingCombatText, CombatTextEvent } from '@/components/floating-combat-text';
+import { LevelUpModal } from '@/components/level-up-modal';
 import { CyberQuest } from '@/components/quest-card';
-import { HeroState } from '@/types/game';
+import {
+  HeroState,
+  HabitItem,
+  DailyItem,
+  TodoItem,
+  StartingObjective,
+} from '@/types/game';
 import { sound } from '@/lib/sound';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import {
   fetchHeroFromDb,
   saveHeroToDb,
@@ -20,7 +32,7 @@ import {
   toggleQuestInDb,
   claimAllQuestsInDb,
 } from '@/lib/supabase-service';
-import { Shield } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 const INITIAL_HERO: HeroState = {
   id: 'user-1',
@@ -112,14 +124,278 @@ const INITIAL_QUESTS: CyberQuest[] = [
   },
 ];
 
+const INITIAL_HABITS: HabitItem[] = [
+  {
+    id: 'h-1',
+    title: '25-Minute Deep Focus Sprint',
+    notes: 'No distractions or multitasking. Pure flow state.',
+    isPositive: true,
+    isNegative: false,
+    positiveCount: 14,
+    negativeCount: 0,
+    difficulty: 'MEDIUM',
+    attributeType: 'INTELLECT',
+  },
+  {
+    id: 'h-2',
+    title: 'Clean Hydration & Electrolytes',
+    notes: 'Drink 500ml water upon waking or working.',
+    isPositive: true,
+    isNegative: false,
+    positiveCount: 22,
+    negativeCount: 0,
+    difficulty: 'EASY',
+    attributeType: 'STAMINA',
+  },
+  {
+    id: 'h-3',
+    title: 'Doomscrolling / Mindless Feeds',
+    notes: 'Mindless scrolling drains operator focus and damages HP!',
+    isPositive: false,
+    isNegative: true,
+    positiveCount: 0,
+    negativeCount: 3,
+    difficulty: 'HARD',
+    attributeType: 'AGILITY',
+  },
+  {
+    id: 'h-4',
+    title: 'Posture Calibration & Stretch',
+    notes: 'Stand up, stretch shoulders, calibrate spinal alignment.',
+    isPositive: true,
+    isNegative: true,
+    positiveCount: 8,
+    negativeCount: 2,
+    difficulty: 'TRIVIAL',
+    attributeType: 'STRENGTH',
+  },
+];
+
+const INITIAL_DAILIES: DailyItem[] = [
+  {
+    id: 'd-1',
+    title: 'Daily Code Commit & Matrix Sync',
+    notes: 'Ship at least 1 clean pull request or feature commit.',
+    completed: false,
+    streak: 7,
+    daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+    difficulty: 'MEDIUM',
+    attributeType: 'INTELLECT',
+  },
+  {
+    id: 'd-2',
+    title: 'Physical Calibration Workout',
+    notes: 'Strength training, cardio, or mobility routine.',
+    completed: false,
+    streak: 5,
+    daysOfWeek: [1, 2, 3, 4, 5],
+    difficulty: 'HARD',
+    attributeType: 'STRENGTH',
+  },
+  {
+    id: 'd-3',
+    title: 'Evening Reflection & Day Plan',
+    notes: 'Review achievements and inscribe tomorrow top 3 objectives.',
+    completed: false,
+    streak: 12,
+    daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+    difficulty: 'EASY',
+    attributeType: 'STAMINA',
+  },
+];
+
+const INITIAL_TODOS: TodoItem[] = [
+  {
+    id: 't-1',
+    title: 'Deploy Life RPG Production Release',
+    notes: 'Verify responsive build, Supabase integration, and audio synthesis.',
+    completed: false,
+    dueDate: 'Today',
+    difficulty: 'HARD',
+    attributeType: 'INTELLECT',
+  },
+  {
+    id: 't-2',
+    title: 'Configure Google OAuth Client Credentials',
+    notes: 'Add client ID and secret in Supabase dashboard for cross-device sync.',
+    completed: false,
+    dueDate: 'This Week',
+    difficulty: 'MEDIUM',
+    attributeType: 'AGILITY',
+  },
+];
+
+const INITIAL_OBJECTIVES: StartingObjective[] = [
+  {
+    id: 'obj-1',
+    title: 'Record your first positive habit (+)',
+    completed: false,
+    rewardXp: 50,
+    rewardGold: 35,
+  },
+  {
+    id: 'obj-2',
+    title: 'Complete a daily ritual or quest',
+    completed: false,
+    rewardXp: 50,
+    rewardGold: 35,
+  },
+  {
+    id: 'obj-3',
+    title: 'Equip or purchase gear in the Bazaar',
+    completed: false,
+    rewardXp: 50,
+    rewardGold: 30,
+  },
+];
+
 export default function MasterHeroQuestApp() {
   const [hero, setHero] = useState<HeroState>(INITIAL_HERO);
   const [quests, setQuests] = useState<CyberQuest[]>(INITIAL_QUESTS);
+  const [habits, setHabits] = useState<HabitItem[]>(INITIAL_HABITS);
+  const [dailies, setDailies] = useState<DailyItem[]>(INITIAL_DAILIES);
+  const [todos, setTodos] = useState<TodoItem[]>(INITIAL_TODOS);
+  const [startingObjectives, setStartingObjectives] =
+    useState<StartingObjective[]>(INITIAL_OBJECTIVES);
+
   const [activeTab, setActiveTab] = useState<MainTabType>('QUESTS');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [showProfileDrawer, setShowProfileDrawer] = useState(false);
 
-  // Sync state from Supabase on mount if configured
+  // Gamification & Feedback states
+  const [comboMultiplier, setComboMultiplier] = useState(1.0);
+  const [combatTextEvents, setCombatTextEvents] = useState<CombatTextEvent[]>([]);
+  const [isLootModalOpen, setIsLootModalOpen] = useState(false);
+  const [isFaintModalOpen, setIsFaintModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [levelUpData, setLevelUpData] = useState<any>(null);
+  const [isHitFlashing, setIsHitFlashing] = useState(false);
+
+  // Authenticated User Session state
+  const [currentUser, setCurrentUser] = useState<{
+    id: string;
+    email?: string | null;
+    username: string;
+    avatarUrl?: string | null;
+    isGuest: boolean;
+  }>({
+    id: 'user-1',
+    email: null,
+    username: 'Nexus Operator',
+    avatarUrl: null,
+    isGuest: true,
+  });
+
+  const comboTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Add floating combat text helper
+  const addCombatText = (
+    x: number,
+    y: number,
+    text: string,
+    type: CombatTextEvent['type']
+  ) => {
+    const newEvent: CombatTextEvent = {
+      id: `${Date.now()}-${Math.random()}`,
+      x,
+      y,
+      text,
+      type,
+    };
+    setCombatTextEvents((prev) => [...prev, newEvent]);
+
+    setTimeout(() => {
+      setCombatTextEvents((prev) => prev.filter((e) => e.id !== newEvent.id));
+    }, 1200);
+  };
+
+  // Roll for random Loot Crate drop (~22% chance)
+  const checkLootDrop = (x: number, y: number) => {
+    const roll = Math.random();
+    if (roll < 0.22) {
+      addCombatText(x, y - 30, '🎁 LOOT CRATE DISCOVERED!', 'LOOT');
+      setTimeout(() => {
+        setIsLootModalOpen(true);
+      }, 700);
+    }
+  };
+
+  // Increase combo multiplier
+  const bumpCombo = (x: number, y: number) => {
+    const nextCombo = Math.min(2.5, Number((comboMultiplier + 0.2).toFixed(1)));
+    setComboMultiplier(nextCombo);
+    if (nextCombo > 1.0) {
+      addCombatText(x, y - 50, `x${nextCombo.toFixed(1)} COMBO!`, 'COMBO');
+      sound.playCombo();
+    }
+
+    if (comboTimerRef.current) clearTimeout(comboTimerRef.current);
+    comboTimerRef.current = setTimeout(() => {
+      setComboMultiplier(1.0);
+    }, 45000); // 45s combo window
+  };
+
+  // Listen to Supabase Auth State
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setCurrentUser({
+          id: user.id,
+          email: user.email,
+          username:
+            user.user_metadata?.username ||
+            user.email?.split('@')[0] ||
+            'Nexus Operator',
+          avatarUrl: user.user_metadata?.avatar_url || null,
+          isGuest: false,
+        });
+        setHero((h) => ({
+          ...h,
+          username:
+            user.user_metadata?.username ||
+            user.email?.split('@')[0] ||
+            h.username,
+        }));
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setCurrentUser({
+          id: session.user.id,
+          email: session.user.email,
+          username:
+            session.user.user_metadata?.username ||
+            session.user.email?.split('@')[0] ||
+            'Nexus Operator',
+          avatarUrl: session.user.user_metadata?.avatar_url || null,
+          isGuest: false,
+        });
+        setHero((h) => ({
+          ...h,
+          username:
+            session.user.user_metadata?.username ||
+            session.user.email?.split('@')[0] ||
+            h.username,
+        }));
+      } else {
+        setCurrentUser({
+          id: 'user-1',
+          email: null,
+          username: 'Nexus Operator',
+          avatarUrl: null,
+          isGuest: true,
+        });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Sync state from Supabase on mount
   useEffect(() => {
     async function loadData() {
       const [dbHero, dbQuests] = await Promise.all([
@@ -133,13 +409,182 @@ export default function MasterHeroQuestApp() {
     loadData();
   }, []);
 
-  // Sync hero state changes to Supabase
+  // Check for HP depletion / Hero Faint
   useEffect(() => {
-    saveHeroToDb(hero);
-  }, [hero.level, hero.xp, hero.gold, hero.streakCount, hero.unspentSkillPoints, hero.radar]);
+    if (hero.hp <= 0 && !isFaintModalOpen) {
+      sound.playFaint();
+      setIsFaintModalOpen(true);
+    }
+  }, [hero.hp, isFaintModalOpen]);
+
+  // Handle Positive Habit Trigger (+)
+  const handleTriggerHabitPlus = (habit: HabitItem, e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top;
+
+    const baseExp = habit.difficulty === 'HARD' ? 60 : habit.difficulty === 'MEDIUM' ? 35 : 20;
+    const baseGold = habit.difficulty === 'HARD' ? 25 : habit.difficulty === 'MEDIUM' ? 15 : 8;
+
+    const earnedXp = Math.round(baseExp * comboMultiplier * (hero.isOverclocked ? 2 : 1));
+    const earnedGold = Math.round(baseGold * comboMultiplier);
+
+    addCombatText(x, y, `+${earnedXp} XP`, 'XP');
+    setTimeout(() => addCombatText(x + 20, y - 20, `+${earnedGold} Gold`, 'GOLD'), 150);
+
+    bumpCombo(x, y);
+    checkLootDrop(x, y);
+
+    setHabits((prev) =>
+      prev.map((h) =>
+        h.id === habit.id ? { ...h, positiveCount: (h.positiveCount || 0) + 1 } : h
+      )
+    );
+
+    // Update Hero Stats
+    setHero((h) => {
+      const newTotalXp = h.totalXp + earnedXp;
+      let newCurrentXp = h.xp + earnedXp;
+      let newLevel = h.level;
+      let newNextXp = h.nextLevelXp;
+      let newSkillPoints = h.unspentSkillPoints;
+      let leveledUp = false;
+
+      if (newCurrentXp >= newNextXp) {
+        newLevel += 1;
+        newSkillPoints += 1;
+        newCurrentXp = newCurrentXp - newNextXp;
+        newNextXp = Math.round(newNextXp * 1.25);
+        leveledUp = true;
+      }
+
+      if (leveledUp) {
+        setLevelUpData({
+          currentLevel: newLevel,
+          earnedXp,
+          earnedGold,
+          streakBonus: 5,
+          newStreak: h.streakCount,
+          levelUp: true,
+          nextLevelXp: newNextXp,
+        });
+        sound.playLevelUp();
+      }
+
+      return {
+        ...h,
+        level: newLevel,
+        xp: newCurrentXp,
+        nextLevelXp: newNextXp,
+        totalXp: newTotalXp,
+        gold: h.gold + earnedGold,
+        hp: Math.min(h.maxHp, h.hp + 10),
+        unspentSkillPoints: newSkillPoints,
+      };
+    });
+
+    setStartingObjectives((prev) =>
+      prev.map((o) => (o.id === 'obj-1' ? { ...o, completed: true } : o))
+    );
+  };
+
+  // Handle Negative Habit Trigger (-)
+  const handleTriggerHabitMinus = (habit: HabitItem, e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top;
+
+    const damageAmount = habit.difficulty === 'HARD' ? 30 : 15;
+
+    setIsHitFlashing(true);
+    setTimeout(() => setIsHitFlashing(false), 300);
+
+    addCombatText(x, y, `-${damageAmount} HP!`, 'DAMAGE');
+    setComboMultiplier(1.0);
+
+    setHabits((prev) =>
+      prev.map((h) =>
+        h.id === habit.id ? { ...h, negativeCount: (h.negativeCount || 0) + 1 } : h
+      )
+    );
+
+    setHero((h) => ({
+      ...h,
+      hp: Math.max(0, h.hp - damageAmount),
+    }));
+  };
+
+  // Handle Daily Ritual Toggle
+  const handleToggleDaily = (daily: DailyItem, e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top;
+
+    const updatedCompleted = !daily.completed;
+    const updatedStreak = updatedCompleted ? daily.streak + 1 : Math.max(0, daily.streak - 1);
+
+    setDailies((prev) =>
+      prev.map((d) =>
+        d.id === daily.id ? { ...d, completed: updatedCompleted, streak: updatedStreak } : d
+      )
+    );
+
+    if (updatedCompleted) {
+      const earnedXp = Math.round(45 * comboMultiplier);
+      const earnedGold = Math.round(20 * comboMultiplier);
+
+      addCombatText(x, y, `+${earnedXp} XP (Ritual)`, 'XP');
+      setTimeout(() => addCombatText(x + 15, y - 20, `+${earnedGold} Gold`, 'GOLD'), 150);
+      bumpCombo(x, y);
+      checkLootDrop(x, y);
+
+      setHero((h) => ({
+        ...h,
+        xp: h.xp + earnedXp,
+        totalXp: h.totalXp + earnedXp,
+        gold: h.gold + earnedGold,
+        hp: Math.min(h.maxHp, h.hp + 20),
+        streakCount: Math.max(h.streakCount, updatedStreak),
+      }));
+
+      setStartingObjectives((prev) =>
+        prev.map((o) => (o.id === 'obj-2' ? { ...o, completed: true } : o))
+      );
+    }
+  };
+
+  // Handle To-Do Toggle
+  const handleToggleTodo = (todo: TodoItem, e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top;
+
+    const updatedCompleted = !todo.completed;
+
+    setTodos((prev) =>
+      prev.map((t) => (t.id === todo.id ? { ...t, completed: updatedCompleted } : t))
+    );
+
+    if (updatedCompleted) {
+      const earnedXp = Math.round(70 * comboMultiplier);
+      const earnedGold = Math.round(35 * comboMultiplier);
+
+      addCombatText(x, y, `+${earnedXp} XP (Bounty)`, 'XP');
+      setTimeout(() => addCombatText(x + 15, y - 20, `+${earnedGold} Gold`, 'GOLD'), 150);
+      bumpCombo(x, y);
+      checkLootDrop(x, y);
+
+      setHero((h) => ({
+        ...h,
+        xp: h.xp + earnedXp,
+        totalXp: h.totalXp + earnedXp,
+        gold: h.gold + earnedGold,
+      }));
+    }
+  };
 
   // Toggle single quest completion status
-  const handleToggleStatus = (id: string, completed: boolean) => {
+  const handleToggleQuestStatus = (id: string, completed: boolean) => {
     toggleQuestInDb(id, completed);
     setQuests((prev) =>
       prev.map((q) => {
@@ -148,17 +593,15 @@ export default function MasterHeroQuestApp() {
         const updated = { ...q, completed };
 
         if (completed) {
-          const multiplier = hero.isOverclocked ? 2 : 1;
-          const streakMultiplier = 1.1;
-          const earnedXp = q.xpReward * multiplier;
-          const earnedGold = Math.round((q.goldReward + (q.streakBonus || 0)) * streakMultiplier);
+          const earnedXp = q.xpReward * comboMultiplier * (hero.isOverclocked ? 2 : 1);
+          const earnedGold = Math.round((q.goldReward + (q.streakBonus || 0)) * comboMultiplier);
 
           setHero((h) => {
             const newTotalXp = h.totalXp + earnedXp;
             let newCurrentXp = h.xp + earnedXp;
             let newLevel = h.level;
             let newNextXp = h.nextLevelXp;
-            let newHp = Math.min(h.maxHp, h.hp + 15);
+            let newHp = Math.min(h.maxHp, h.hp + 25);
             let newSkillPoints = h.unspentSkillPoints;
 
             if (newCurrentXp >= newNextXp) {
@@ -167,6 +610,16 @@ export default function MasterHeroQuestApp() {
               newCurrentXp = newCurrentXp - newNextXp;
               newNextXp = Math.round(newNextXp * 1.25);
               newHp = h.maxHp;
+              setLevelUpData({
+                currentLevel: newLevel,
+                earnedXp,
+                earnedGold,
+                streakBonus: q.streakBonus || 5,
+                newStreak: h.streakCount,
+                levelUp: true,
+                nextLevelXp: newNextXp,
+              });
+              sound.playLevelUp();
             }
 
             return {
@@ -180,6 +633,10 @@ export default function MasterHeroQuestApp() {
               unspentSkillPoints: newSkillPoints,
             };
           });
+
+          setStartingObjectives((prev) =>
+            prev.map((o) => (o.id === 'obj-2' ? { ...o, completed: true } : o))
+          );
         }
 
         return updated;
@@ -198,71 +655,98 @@ export default function MasterHeroQuestApp() {
     let totalEarnedGold = 0;
 
     pendingQuests.forEach((q) => {
-      totalEarnedXp += q.xpReward;
+      totalEarnedXp += q.xpReward * (hero.isOverclocked ? 2 : 1);
       totalEarnedGold += q.goldReward + (q.streakBonus || 0);
     });
 
     setQuests((prev) => prev.map((q) => ({ ...q, completed: true })));
 
-    setHero((h) => {
-      let newCurrentXp = h.xp + totalEarnedXp;
-      let newLevel = h.level;
-      let newNextXp = h.nextLevelXp;
-      let newSkillPoints = h.unspentSkillPoints;
-
-      if (newCurrentXp >= newNextXp) {
-        newLevel += 1;
-        newSkillPoints += 1;
-        newCurrentXp = newCurrentXp - newNextXp;
-        newNextXp = Math.round(newNextXp * 1.25);
-      }
-
-      return {
-        ...h,
-        level: newLevel,
-        xp: newCurrentXp,
-        nextLevelXp: newNextXp,
-        totalXp: h.totalXp + totalEarnedXp,
-        gold: h.gold + totalEarnedGold,
-        hp: h.maxHp,
-        unspentSkillPoints: newSkillPoints,
-      };
-    });
-  };
-
-  // Spend skill point helper
-  const handleSpendSkillPoint = () => {
-    if (hero.unspentSkillPoints <= 0) return;
     setHero((h) => ({
       ...h,
-      unspentSkillPoints: Math.max(0, h.unspentSkillPoints - 1),
-      vitalityBonus: +(h.vitalityBonus + 0.8).toFixed(1),
-      surgeBonus: +(h.surgeBonus + 1.2).toFixed(1),
-      strikeLatency: Math.max(15, h.strikeLatency - 2),
-      radar: {
-        ...h.radar,
-        int: h.radar.int + 1,
-        syn: h.radar.syn + 1,
-      },
+      xp: h.xp + totalEarnedXp,
+      totalXp: h.totalXp + totalEarnedXp,
+      gold: h.gold + totalEarnedGold,
+      hp: h.maxHp,
+    }));
+
+    try {
+      confetti({
+        particleCount: 100,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ['#00F0FF', '#FF007A', '#FBBF24', '#8A5BEF'],
+      });
+    } catch {}
+  };
+
+  // Complete a starting objective
+  const handleCompleteObjective = (id: string) => {
+    const obj = startingObjectives.find((o) => o.id === id);
+    if (!obj || obj.completed) return;
+
+    sound.playCoin();
+    setStartingObjectives((prev) =>
+      prev.map((o) => (o.id === id ? { ...o, completed: true } : o))
+    );
+
+    setHero((h) => ({
+      ...h,
+      xp: h.xp + obj.rewardXp,
+      totalXp: h.totalXp + obj.rewardXp,
+      gold: h.gold + obj.rewardGold,
     }));
   };
 
-  // Purchase item helper
-  const handlePurchaseItem = (cost: number) => {
+  // Revive Operator from Faint Screen
+  const handleRevive = () => {
+    const goldLoss = Math.min(hero.gold, Math.round(hero.gold * 0.1));
     setHero((h) => ({
       ...h,
-      gold: Math.max(0, h.gold - cost),
+      hp: Math.round(h.maxHp * 0.5),
+      gold: Math.max(0, h.gold - goldLoss),
+    }));
+    setIsFaintModalOpen(false);
+  };
+
+  // Claim Mystery Loot Crate Rewards
+  const handleClaimLootRewards = (rewards: LootReward[]) => {
+    let extraGold = 0;
+    let extraShards = 0;
+    let extraHp = 0;
+
+    rewards.forEach((r) => {
+      if (r.type === 'GOLD') extraGold += r.amount || 50;
+      if (r.type === 'SHARDS') extraShards += r.amount || 2;
+      if (r.type === 'POTION') extraHp += 250;
+    });
+
+    setHero((h) => ({
+      ...h,
+      gold: h.gold + extraGold,
+      cyberShards: h.cyberShards + extraShards,
+      hp: Math.min(h.maxHp, h.hp + extraHp),
     }));
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-[#070712] text-slate-900 dark:text-slate-100 font-sans pb-24 selection:bg-cyan-400 selection:text-slate-950 transition-colors duration-200">
-      {/* Top Cyber Window Bar */}
-      <div className="border-b border-slate-200 dark:border-indigo-950/60 bg-white/80 dark:bg-[#06060f] px-4 py-1 text-center font-mono text-[11px] text-slate-500 dark:text-slate-400 tracking-wider">
-        HeroQuest: Cyber-RPG Mastery Engine // v2.4
-      </div>
+    <div className="min-h-screen bg-[#070512] text-slate-100 selection:bg-cyan-500 selection:text-slate-950 font-sans pb-28 relative overflow-x-hidden">
+      {/* Red Hit Flash Overlay when taking damage */}
+      <AnimatePresence>
+        {isHitFlashing && (
+          <motion.div
+            initial={{ opacity: 0.6 }}
+            animate={{ opacity: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="pointer-events-none fixed inset-0 z-50 bg-rose-600/40"
+          />
+        )}
+      </AnimatePresence>
 
-      {/* Top RPG HUD Bar */}
+      {/* Floating Combat Text Layer */}
+      <FloatingCombatText events={combatTextEvents} />
+
+      {/* Top Sticky Hero HUD with Google Auth & HP bar */}
       <HeroHud
         hero={{
           username: hero.username,
@@ -272,165 +756,144 @@ export default function MasterHeroQuestApp() {
           totalXp: hero.totalXp,
           gold: hero.gold,
           streakCount: hero.streakCount,
+          hp: hero.hp,
+          maxHp: hero.maxHp,
         }}
-        onProfileClick={() => setShowProfileDrawer(true)}
+        comboMultiplier={comboMultiplier}
+        currentUser={currentUser}
+        onProfileClick={() => setActiveTab('ATTRIBUTES')}
+        onAuthClick={() => setIsAuthModalOpen(true)}
       />
 
-      {/* Main Content Area */}
-      <main className="mx-auto max-w-xl px-3 sm:px-4 py-4">
-        <AnimatePresence mode="wait">
-          {activeTab === 'QUESTS' && (
-            <motion.div
-              key="quests"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              <QuestsHubView
-                hero={hero}
-                quests={quests}
-                onToggleStatus={handleToggleStatus}
-                onOpenCreateQuest={() => setIsCreateOpen(true)}
-                onToggleOverclock={() =>
-                  setHero((h) => ({ ...h, isOverclocked: !h.isOverclocked }))
-                }
-                onClaimAll={handleClaimAll}
-              />
-            </motion.div>
-          )}
+      {/* Main Content Area by Tab */}
+      <main className="mx-auto max-w-lg sm:max-w-xl px-3 sm:px-4 pt-4">
+        {activeTab === 'QUESTS' && (
+          <QuestsHubView
+            hero={hero}
+            quests={quests}
+            habits={habits}
+            dailies={dailies}
+            todos={todos}
+            startingObjectives={startingObjectives}
+            onToggleStatus={handleToggleQuestStatus}
+            onOpenCreateQuest={() => setIsCreateOpen(true)}
+            onToggleOverclock={() => {
+              sound.playOverclock();
+              setHero((h) => ({ ...h, isOverclocked: !h.isOverclocked }));
+            }}
+            onClaimAll={handleClaimAll}
+            onTriggerHabitPlus={handleTriggerHabitPlus}
+            onTriggerHabitMinus={handleTriggerHabitMinus}
+            onToggleDaily={handleToggleDaily}
+            onToggleTodo={handleToggleTodo}
+            onCompleteObjective={handleCompleteObjective}
+          />
+        )}
 
-          {activeTab === 'ATTRIBUTES' && (
-            <motion.div
-              key="attributes"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              <CharacterMatrixView
-                hero={hero}
-                onSpendSkillPoint={handleSpendSkillPoint}
-              />
-            </motion.div>
-          )}
+        {activeTab === 'ATTRIBUTES' && (
+          <CharacterMatrixView
+            hero={hero}
+            onSpendSkillPoint={() => {
+              if (hero.unspentSkillPoints > 0) {
+                sound.playSkillUnlock();
+                setHero((h) => ({
+                  ...h,
+                  unspentSkillPoints: h.unspentSkillPoints - 1,
+                  vitalityBonus: h.vitalityBonus + 1.5,
+                }));
+              }
+            }}
+          />
+        )}
 
-          {activeTab === 'ARMORY' && (
-            <motion.div
-              key="armory"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              <ArmoryBazaarView
-                userGold={hero.gold}
-                userShards={hero.cyberShards}
-                onPurchaseItem={handlePurchaseItem}
-              />
-            </motion.div>
-          )}
+        {activeTab === 'ARMORY' && (
+          <ArmoryBazaarView
+            userGold={hero.gold}
+            userShards={hero.cyberShards}
+            onPurchaseItem={(cost) => {
+              sound.playBuy();
+              setHero((h) => ({
+                ...h,
+                gold: Math.max(0, h.gold - cost),
+                hp: h.maxHp,
+              }));
+              setStartingObjectives((prev) =>
+                prev.map((o) => (o.id === 'obj-3' ? { ...o, completed: true } : o))
+              );
+            }}
+          />
+        )}
 
-          {activeTab === 'BOSS' && (
-            <motion.div
-              key="boss"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              <WorldBossView
-                onBossDamageDealt={(dmg) => {
-                  setHero((h) => ({
-                    ...h,
-                    xp: h.xp + Math.round(dmg * 0.05),
-                    gold: h.gold + Math.round(dmg * 0.02),
-                  }));
-                }}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {activeTab === 'BOSS' && (
+          <WorldBossView
+            onBossDamageDealt={(damage) => {
+              sound.playCritHit();
+              setHero((h) => ({
+                ...h,
+                gold: h.gold + Math.round(damage * 0.1),
+                cyberShards: h.cyberShards + 1,
+              }));
+            }}
+          />
+        )}
       </main>
 
-      {/* Cyberpunk 4-Tab Bottom Navigation Bar */}
+      {/* Cyber Bottom Navigation Dock */}
       <CyberBottomNav
         activeTab={activeTab}
-        onSelectTab={setActiveTab}
-        onOpenCreateQuest={() => setIsCreateOpen(true)}
+        onSelectTab={(tab) => {
+          sound.playClick();
+          setActiveTab(tab);
+        }}
       />
 
-      {/* Inscribe Quest Modal */}
+      {/* Create Quest Modal */}
       <CreateQuestModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        onQuestCreated={async (newQuest) => {
+        onQuestCreated={(newQuest) => {
+          sound.playSkillUnlock();
+          insertQuestToDb(newQuest);
           setQuests((prev) => [newQuest, ...prev]);
-          const dbId = await insertQuestToDb(newQuest);
-          if (dbId) {
-            setQuests((prev) =>
-              prev.map((q) => (q.id === newQuest.id ? { ...q, id: dbId } : q))
-            );
-          }
         }}
       />
 
-      {/* Hero Profile Modal */}
-      <AnimatePresence>
-        {showProfileDrawer && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="relative w-full max-w-md overflow-hidden rounded-3xl border-2 border-cyan-400 bg-[#0d091e] p-6 shadow-[0_0_35px_rgba(0,240,255,0.3)] text-slate-100 font-mono"
-            >
-              <div className="flex items-center justify-between pb-3 border-b border-indigo-950">
-                <div className="flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-amber-400" />
-                  <h3 className="text-base font-black text-white">HERO PROFILE MATRIX</h3>
-                </div>
-                <button
-                  onClick={() => setShowProfileDrawer(false)}
-                  className="rounded-lg bg-slate-900 border border-slate-800 p-1 text-slate-400 hover:text-white"
-                >
-                  ✕
-                </button>
-              </div>
+      {/* Google Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        currentUser={currentUser}
+        onSignOut={() => {
+          setCurrentUser({
+            id: 'user-1',
+            email: null,
+            username: 'Nexus Operator',
+            avatarUrl: null,
+            isGuest: true,
+          });
+        }}
+      />
 
-              <div className="mt-4 space-y-3 text-xs">
-                <div className="flex justify-between p-2.5 rounded-xl bg-indigo-950/30 border border-indigo-900/40">
-                  <span className="text-slate-400">Class & Specialization:</span>
-                  <span className="text-cyan-300 font-bold">LVL {hero.level} CHRONO-KNIGHT</span>
-                </div>
-                <div className="flex justify-between p-2.5 rounded-xl bg-indigo-950/30 border border-indigo-900/40">
-                  <span className="text-slate-400">Total Lifetime EXP:</span>
-                  <span className="text-pink-300 font-bold">{hero.totalXp.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between p-2.5 rounded-xl bg-indigo-950/30 border border-indigo-900/40">
-                  <span className="text-slate-400">Radiant Streak:</span>
-                  <span className="text-rose-400 font-bold">{hero.streakCount} Days Active</span>
-                </div>
-                <div className="flex justify-between p-2.5 rounded-xl bg-indigo-950/30 border border-indigo-900/40">
-                  <span className="text-slate-400">Cyber Gold Stash:</span>
-                  <span className="text-amber-300 font-bold">{hero.gold.toLocaleString()} G</span>
-                </div>
-                <div className="flex justify-between p-2.5 rounded-xl bg-indigo-950/30 border border-indigo-900/40">
-                  <span className="text-slate-400">Cyber Shards:</span>
-                  <span className="text-cyan-300 font-bold">{hero.cyberShards} Shards</span>
-                </div>
-              </div>
+      {/* Hero Faint / Death Penalty Modal */}
+      <HeroFaintModal
+        isOpen={isFaintModalOpen}
+        goldPenalty={Math.min(hero.gold, Math.round(hero.gold * 0.1))}
+        onRevive={handleRevive}
+      />
 
-              <button
-                onClick={() => setShowProfileDrawer(false)}
-                className="mt-5 w-full rounded-xl bg-cyan-500 py-2.5 font-bold text-slate-950 shadow-[0_0_12px_rgba(0,240,255,0.4)]"
-              >
-                RETURN TO MATRIX
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Mystery Loot Crate Unboxing Modal */}
+      <LootCrateModal
+        isOpen={isLootModalOpen}
+        onClose={() => setIsLootModalOpen(false)}
+        onClaim={handleClaimLootRewards}
+      />
+
+      {/* Level Up Celebratory Modal */}
+      <LevelUpModal
+        isOpen={Boolean(levelUpData)}
+        data={levelUpData}
+        onClose={() => setLevelUpData(null)}
+      />
     </div>
   );
 }
