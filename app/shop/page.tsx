@@ -9,13 +9,13 @@ import { useRouter } from 'next/navigation';
 export default function ShopPage() {
   const [hero, setHero] = useState({
     username: 'Nexus Operator',
-    level: 14,
-    currentXp: 3850,
-    nextLevelXp: 4000,
-    totalXp: 18450,
-    gold: 1420,
-    cyberShards: 48,
-    streakCount: 7,
+    level: 1,
+    currentXp: 0,
+    nextLevelXp: 100,
+    totalXp: 0,
+    gold: 0,
+    cyberShards: 0,
+    streakCount: 0,
   });
 
   const router = useRouter();
