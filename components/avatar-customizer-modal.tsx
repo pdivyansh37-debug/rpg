@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Sparkles, Dices, Shield, Zap, RefreshCw } from 'lucide-react';
+import { X, Check, Sparkles, Dices, Shield, Zap, RefreshCw, User, Cpu } from 'lucide-react';
 import { PixelAvatar, DEFAULT_AVATAR } from './pixel-avatar';
-import { AvatarConfig } from '@/types/game';
+import { AvatarConfig, AvatarGender, AvatarHairStyle } from '@/types/game';
 import { sound } from '@/lib/sound';
 
 interface AvatarCustomizerModalProps {
@@ -16,14 +16,20 @@ interface AvatarCustomizerModalProps {
   operatorLevel?: number;
 }
 
+const GENDER_OPTIONS: { id: AvatarGender; label: string; icon: string; desc: string }[] = [
+  { id: 'MALE', label: 'Male / Knight', icon: '♂️', desc: 'Warrior Chassis' },
+  { id: 'FEMALE', label: 'Female / Valkyrie', icon: '♀️', desc: 'Aegis Chassis' },
+  { id: 'CYBORG', label: 'Cyborg / Synth', icon: '🤖', desc: 'Augmented Frame' },
+];
+
 const SKIN_TONES = [
   { label: 'Pale', color: '#FCD8B8' },
   { label: 'Fair', color: '#E5B887' },
   { label: 'Tan', color: '#A87A5B' },
   { label: 'Warm', color: '#7E5539' },
   { label: 'Deep', color: '#4D301E' },
-  { label: 'Chrome', color: '#CBD5E1' },
-  { label: 'Synth Cyan', color: '#67E8F9' },
+  { label: 'Chrome Synth', color: '#CBD5E1' },
+  { label: 'Neon Cyan', color: '#67E8F9' },
   { label: 'Void Lilac', color: '#C084FC' },
 ];
 
@@ -38,11 +44,15 @@ const HAIR_COLORS = [
   { label: 'Silver Chrome', color: '#E2E8F0' },
 ];
 
-const HAIR_STYLES: { id: AvatarConfig['hairStyle']; label: string; iconText: string }[] = [
+const HAIR_STYLES: { id: AvatarHairStyle; label: string; iconText: string; category?: 'ALL' | 'MALE' | 'FEMALE' }[] = [
+  { id: 'short', label: 'Short Crop', iconText: '✂️ Short' },
   { id: 'spiky', label: 'Cyber Spiky', iconText: '⚡ Spiky' },
   { id: 'afro', label: 'Afro Curls', iconText: '🌀 Afro' },
-  { id: 'short', label: 'Short Crop', iconText: '✂️ Short' },
-  { id: 'long', label: 'Long Flow', iconText: '🌊 Long' },
+  { id: 'long', label: 'Flowing Long', iconText: '🌊 Long' },
+  { id: 'ponytail', label: 'High Ponytail', iconText: '🎀 Ponytail' },
+  { id: 'bob', label: 'Neon Bob', iconText: '💇‍♀️ Bob Cut' },
+  { id: 'braids', label: 'Twin Braids', iconText: '✨ Braids' },
+  { id: 'cyber_helm', label: 'Visor Helm', iconText: '🪖 Helm' },
 ];
 
 const SHIRT_COLORS = [
@@ -76,8 +86,32 @@ export const AvatarCustomizerModal: React.FC<AvatarCustomizerModalProps> = ({
 
   const currentAura = AURA_GLOWS[selectedAuraIndex] || AURA_GLOWS[0];
 
+  const handleSelectGender = (gender: AvatarGender) => {
+    sound.playClick();
+    if (gender === 'FEMALE') {
+      setConfig((prev) => ({
+        ...prev,
+        gender: 'FEMALE',
+        hairStyle: prev.hairStyle === 'short' || prev.hairStyle === 'spiky' ? 'ponytail' : prev.hairStyle,
+      }));
+    } else if (gender === 'CYBORG') {
+      setConfig((prev) => ({
+        ...prev,
+        gender: 'CYBORG',
+        skinColor: prev.skinColor === '#FCD8B8' ? '#CBD5E1' : prev.skinColor,
+      }));
+    } else {
+      setConfig((prev) => ({
+        ...prev,
+        gender: 'MALE',
+        hairStyle: prev.hairStyle === 'ponytail' || prev.hairStyle === 'braids' ? 'spiky' : prev.hairStyle,
+      }));
+    }
+  };
+
   const handleRandomize = () => {
     sound.playClick();
+    const randomGender = GENDER_OPTIONS[Math.floor(Math.random() * GENDER_OPTIONS.length)].id;
     const randomSkin = SKIN_TONES[Math.floor(Math.random() * SKIN_TONES.length)].color;
     const randomHairCol = HAIR_COLORS[Math.floor(Math.random() * HAIR_COLORS.length)].color;
     const randomHairStyle = HAIR_STYLES[Math.floor(Math.random() * HAIR_STYLES.length)].id;
@@ -85,6 +119,7 @@ export const AvatarCustomizerModal: React.FC<AvatarCustomizerModalProps> = ({
     const randomAura = Math.floor(Math.random() * AURA_GLOWS.length);
 
     setConfig({
+      gender: randomGender,
       skinColor: randomSkin,
       hairColor: randomHairCol,
       hairStyle: randomHairStyle,
@@ -108,7 +143,7 @@ export const AvatarCustomizerModal: React.FC<AvatarCustomizerModalProps> = ({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.94, y: 15 }}
           transition={{ duration: 0.3 }}
-          className="relative w-full max-w-md overflow-hidden rounded-3xl border-2 border-cyan-500/50 bg-[#0c0920]/95 shadow-[0_0_50px_rgba(0,240,255,0.25)] p-5 sm:p-6 text-slate-100 max-h-[90vh] flex flex-col"
+          className="relative w-full max-w-lg overflow-hidden rounded-3xl border-2 border-cyan-500/50 bg-[#0c0920]/95 shadow-[0_0_50px_rgba(0,240,255,0.25)] p-5 sm:p-6 text-slate-100 max-h-[92vh] flex flex-col"
         >
           {/* Top Neon Scanline */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 shadow-[0_0_15px_rgba(0,240,255,0.8)]" />
@@ -152,7 +187,7 @@ export const AvatarCustomizerModal: React.FC<AvatarCustomizerModalProps> = ({
           </div>
 
           {/* Scrollable Customizer Content */}
-          <div className="flex-1 overflow-y-auto pr-1 my-3 space-y-4 text-xs">
+          <div className="flex-1 overflow-y-auto pr-1 my-3 space-y-4 text-xs custom-scrollbar">
             {/* Live Character Preview Hologram */}
             <div className="relative flex flex-col items-center justify-center py-4 rounded-2xl border border-indigo-900/60 bg-gradient-to-b from-[#150d36] to-[#0a061b] overflow-hidden">
               <div className="absolute inset-0 bg-[radial-gradient(#00f0ff_1px,transparent_1px)] [background-size:16px_16px] opacity-15 pointer-events-none" />
@@ -172,16 +207,48 @@ export const AvatarCustomizerModal: React.FC<AvatarCustomizerModalProps> = ({
               {/* Operator Badge Info */}
               <div className="mt-3 text-center">
                 <span className="text-xs font-black text-white">{operatorName}</span>
-                <div className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">
-                  Chrono-Knight // MK-VII
+                <div className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider flex items-center justify-center gap-1">
+                  <span>
+                    {config.gender === 'FEMALE' ? '♀️ Neon Valkyrie' : config.gender === 'CYBORG' ? '🤖 Synth Cyborg' : '♂️ Chrono-Knight'}
+                  </span>
+                  <span className="text-slate-500">//</span>
+                  <span className="text-purple-300">MK-VII</span>
                 </div>
               </div>
             </div>
 
-            {/* Hair Style Section */}
+            {/* 1. Gender & Body Archetype Section */}
             <div>
               <label className="block text-[11px] font-black text-slate-300 mb-1.5 uppercase tracking-wider">
-                1. Cybernetic Haircut
+                1. Gender & Body Archetype
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {GENDER_OPTIONS.map((g) => {
+                  const isSelected = (config.gender || 'MALE') === g.id;
+                  return (
+                    <button
+                      key={g.id}
+                      type="button"
+                      onClick={() => handleSelectGender(g.id)}
+                      className={`p-2.5 rounded-2xl text-center transition-all border flex flex-col items-center justify-center gap-1 ${
+                        isSelected
+                          ? 'border-cyan-400 bg-cyan-950/80 text-cyan-300 shadow-[0_0_15px_rgba(0,240,255,0.4)]'
+                          : 'border-indigo-950 bg-[#120c2e] text-slate-400 hover:text-white hover:border-indigo-800'
+                      }`}
+                    >
+                      <span className="text-lg">{g.icon}</span>
+                      <span className="text-[11px] font-black">{g.label}</span>
+                      <span className="text-[9px] text-slate-400 hidden sm:inline">{g.desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 2. Hair Style Section */}
+            <div>
+              <label className="block text-[11px] font-black text-slate-300 mb-1.5 uppercase tracking-wider">
+                2. Cybernetic Hairstyle
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                 {HAIR_STYLES.map((style) => (
@@ -204,10 +271,10 @@ export const AvatarCustomizerModal: React.FC<AvatarCustomizerModalProps> = ({
               </div>
             </div>
 
-            {/* Hair Color Section */}
+            {/* 3. Hair Color Section */}
             <div>
               <label className="block text-[11px] font-black text-slate-300 mb-1.5 uppercase tracking-wider">
-                2. Hair Pigment
+                3. Hair Pigment
               </label>
               <div className="flex flex-wrap gap-2">
                 {HAIR_COLORS.map((h) => (
@@ -234,10 +301,10 @@ export const AvatarCustomizerModal: React.FC<AvatarCustomizerModalProps> = ({
               </div>
             </div>
 
-            {/* Skin Tone Section */}
+            {/* 4. Skin Tone Section */}
             <div>
               <label className="block text-[11px] font-black text-slate-300 mb-1.5 uppercase tracking-wider">
-                3. Synthetic Dermis (Skin Tone)
+                4. Synthetic Dermis (Skin Tone)
               </label>
               <div className="flex flex-wrap gap-2">
                 {SKIN_TONES.map((s) => (
@@ -264,10 +331,10 @@ export const AvatarCustomizerModal: React.FC<AvatarCustomizerModalProps> = ({
               </div>
             </div>
 
-            {/* Armor / Chassis Color Section */}
+            {/* 5. Armor / Chassis Color Section */}
             <div>
               <label className="block text-[11px] font-black text-slate-300 mb-1.5 uppercase tracking-wider">
-                4. Combat Chassis Armor Tint
+                5. Combat Chassis Armor Tint
               </label>
               <div className="flex flex-wrap gap-2">
                 {SHIRT_COLORS.map((sh) => (
@@ -294,10 +361,10 @@ export const AvatarCustomizerModal: React.FC<AvatarCustomizerModalProps> = ({
               </div>
             </div>
 
-            {/* Aura Selection */}
+            {/* 6. Aura Selection */}
             <div>
               <label className="block text-[11px] font-black text-slate-300 mb-1.5 uppercase tracking-wider">
-                5. Biometric Aura Glow
+                6. Biometric Aura Glow
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {AURA_GLOWS.map((aura, idx) => (

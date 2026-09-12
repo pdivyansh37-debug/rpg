@@ -2,12 +2,25 @@ export type QuestDifficulty = 'TRIVIAL' | 'EASY' | 'MEDIUM' | 'HARD';
 export type AttributeType = 'STRENGTH' | 'INTELLECT' | 'STAMINA' | 'AGILITY';
 export type ItemType = 'AVATAR_COSMETIC' | 'PROFILE_BADGE' | 'CUSTOM_THEME' | 'TITLE' | 'GEAR' | 'POTION';
 
+export type AvatarGender = 'MALE' | 'FEMALE' | 'CYBORG';
+
+export type AvatarHairStyle =
+  | 'short'
+  | 'long'
+  | 'spiky'
+  | 'afro'
+  | 'bob'
+  | 'ponytail'
+  | 'braids'
+  | 'cyber_helm';
+
 export interface AvatarConfig {
+  gender?: AvatarGender;
   skinColor: string;
   hairColor: string;
-  hairStyle: 'afro' | 'short' | 'spiky' | 'long';
+  hairStyle: AvatarHairStyle;
   shirtColor: string;
-  bgGradient: string;
+  bgGradient?: string;
 }
 
 export interface StartingObjective {
@@ -242,6 +255,7 @@ export interface RadarStats {
   void: number;
 }
 
+
 export interface HeroState {
   id: string;
   username: string;
@@ -265,3 +279,4 @@ export interface HeroState {
   avatar?: AvatarConfig;
   activeBuffs?: ActiveBuffs;
 }
+
