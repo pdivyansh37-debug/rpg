@@ -4,21 +4,9 @@
 
 @layer base {
   :root {
-    --bg-page: #f4f6fb;
-    --bg-surface: #ffffff;
-    --bg-surface-sub: #f8fafc;
-    --bg-header: rgba(255, 255, 255, 0.92);
-    --border-color: #e2e8f0;
-    --text-primary: #0f172a;
-    --text-secondary: #475569;
-    --text-muted: #64748b;
-  }
-
-  .dark {
-    --bg-page: #070712;
-    --bg-surface: #0e0a1e;
-    --bg-surface-sub: #140f28;
-    --bg-header: rgba(12, 12, 30, 0.92);
+    --bg-page: #070514;
+    --bg-surface: #0e0a24;
+    --bg-surface-sub: #140f32;
     --border-color: rgba(36, 29, 82, 0.8);
     --text-primary: #f8fafc;
     --text-secondary: #cbd5e1;
@@ -26,91 +14,9 @@
   }
 
   body {
-    @apply bg-[#f4f6fb] text-slate-900 dark:bg-[#070712] dark:text-slate-100 antialiased selection:bg-cyan-400 selection:text-slate-950 transition-colors duration-200;
+    @apply bg-[#070514] text-slate-100 antialiased selection:bg-cyan-400 selection:text-slate-950;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
-}
-
-/* Light theme overrides for undisturbed layouts */
-html:not(.dark) body,
-html:not(.dark) .min-h-screen {
-  background-color: #f4f6fb !important;
-  color: #0f172a !important;
-}
-
-html:not(.dark) header {
-  background-color: rgba(255, 255, 255, 0.92) !important;
-  border-color: #e2e8f0 !important;
-}
-
-html:not(.dark) nav {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  border-color: #e2e8f0 !important;
-  color: #475569 !important;
-}
-
-html:not(.dark) h1,
-html:not(.dark) h2,
-html:not(.dark) h3,
-html:not(.dark) h4 {
-  color: #0f172a !important;
-}
-
-/* Dark panel classes override in light mode */
-html:not(.dark) .bg-\[\#070712\],
-html:not(.dark) .bg-\[\#06060f\],
-html:not(.dark) .bg-\[\#0c0c1e\]\/90,
-html:not(.dark) .bg-\[\#090616\]\/95,
-html:not(.dark) .bg-\[\#090714\]\/80,
-html:not(.dark) .bg-\[\#0E0B20\],
-html:not(.dark) .bg-\[\#0e0a1e\],
-html:not(.dark) .bg-\[\#0E0A22\],
-html:not(.dark) .bg-\[\#100B24\],
-html:not(.dark) .bg-\[\#120B28\],
-html:not(.dark) .bg-\[\#100b24\],
-html:not(.dark) .bg-\[\#120c24\],
-html:not(.dark) .bg-\[\#120c24\]\/80,
-html:not(.dark) .bg-\[\#140f28\],
-html:not(.dark) .bg-\[\#140f28\]\/90,
-html:not(.dark) .bg-\[\#130d29\],
-html:not(.dark) .bg-\[\#0e0a1a\],
-html:not(.dark) .bg-\[\#0b0814\]\/70,
-html:not(.dark) .bg-\[\#0A0718\],
-html:not(.dark) .bg-\[\#090918\],
-html:not(.dark) .bg-\[\#120818\],
-html:not(.dark) .bg-\[\#08121a\],
-html:not(.dark) .bg-\[\#0c081c\],
-html:not(.dark) .bg-\[\#12050C\],
-html:not(.dark) .bg-\[\#0e0a1e\]\/40 {
-  background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
-  color: #1e293b !important;
-}
-
-html:not(.dark) .border-indigo-950,
-html:not(.dark) .border-indigo-950\/60,
-html:not(.dark) .border-indigo-950\/80,
-html:not(.dark) .border-indigo-900\/60,
-html:not(.dark) .border-\[\#201D48\],
-html:not(.dark) .border-\[\#262058\],
-html:not(.dark) .border-\[\#241D52\],
-html:not(.dark) .border-\[\#1C173E\] {
-  border-color: #e2e8f0 !important;
-}
-
-html:not(.dark) .text-slate-400,
-html:not(.dark) .text-slate-500 {
-  color: #64748b !important;
-}
-
-html:not(.dark) .text-slate-300,
-html:not(.dark) .text-slate-200 {
-  color: #334155 !important;
-}
-
-html:not(.dark) .text-slate-100,
-html:not(.dark) .text-white {
-  color: #0f172a !important;
 }
 
 /* Cyber Grid Background */
@@ -119,12 +25,6 @@ html:not(.dark) .text-white {
   background-image: 
     linear-gradient(to right, rgba(99, 102, 241, 0.08) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(99, 102, 241, 0.08) 1px, transparent 1px);
-}
-
-html:not(.dark) .cyber-grid {
-  background-image: 
-    linear-gradient(to right, rgba(99, 102, 241, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(99, 102, 241, 0.04) 1px, transparent 1px) !important;
 }
 
 /* Pixel Art Rendering */
@@ -162,33 +62,21 @@ html:not(.dark) .cyber-grid {
   animation: overclock-pulse 2s infinite alternate ease-in-out;
 }
 
-/* Custom Scrollbars */
+/* Custom Cyber Scrollbars */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #090914;
+  background: #070514;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #252347;
+  background: #252048;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #00f0ff;
-}
-
-html:not(.dark) ::-webkit-scrollbar-track {
-  background: #f1f3f9;
-}
-
-html:not(.dark) ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-}
-
-html:not(.dark) ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
 }
