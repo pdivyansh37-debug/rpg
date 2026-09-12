@@ -1,7 +1,38 @@
 export type QuestDifficulty = 'TRIVIAL' | 'EASY' | 'MEDIUM' | 'HARD';
 export type AttributeType = 'STRENGTH' | 'INTELLECT' | 'STAMINA' | 'AGILITY';
-export type ItemType = 'AVATAR_COSMETIC' | 'PROFILE_BADGE' | 'CUSTOM_THEME' | 'TITLE';
-export type QuestStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'ARCHIVED';
+export type ItemType = 'AVATAR_COSMETIC' | 'PROFILE_BADGE' | 'CUSTOM_THEME' | 'TITLE' | 'GEAR' | 'POTION';
+
+export interface AvatarConfig {
+  skinColor: string;
+  hairColor: string;
+  hairStyle: 'afro' | 'short' | 'spiky' | 'long';
+  shirtColor: string;
+  bgGradient: string;
+}
+
+export interface StartingObjective {
+  id: string;
+  title: string;
+  completed: boolean;
+  rewardXp: number;
+  rewardGold: number;
+}
+
+export interface HabiticaHero {
+  id: string;
+  username: string;
+  level: number;
+  hp: number;
+  maxHp: number;
+  xp: number;
+  nextLevelXp: number;
+  mana: number;
+  maxMana: number;
+  gold: number;
+  gems: number;
+  avatar: AvatarConfig;
+  startingObjectives: StartingObjective[];
+}
 
 export interface HeroProfile {
   id: string;
@@ -25,4 +56,145 @@ export interface HeroProfile {
     staminaXp: number;
     agilityXp: number;
   };
+}
+
+export interface HabitItem {
+  id: string;
+  title: string;
+  notes?: string;
+  isPositive: boolean;
+  isNegative: boolean;
+  positiveCount: number;
+  negativeCount: number;
+  difficulty: QuestDifficulty;
+  attributeType?: AttributeType;
+}
+
+export interface DailyItem {
+  id: string;
+  title: string;
+  notes?: string;
+  completed: boolean;
+  streak: number;
+  daysOfWeek: number[]; // 0 = Sun ... 6 = Sat
+  difficulty: QuestDifficulty;
+  checklist?: { id: string; text: string; completed: boolean }[];
+  attributeType?: AttributeType;
+}
+
+export interface TodoItem {
+  id: string;
+  title: string;
+  notes?: string;
+  completed: boolean;
+  dueDate?: string;
+  difficulty: QuestDifficulty;
+  checklist?: { id: string; text: string; completed: boolean }[];
+  attributeType?: AttributeType;
+}
+
+export interface RewardItem {
+  id: string;
+  title: string;
+  notes?: string;
+  cost: number;
+  type: 'CUSTOM' | 'POTION' | 'GEAR' | 'COSMETIC';
+  icon?: string;
+  healAmount?: number;
+  isPurchased?: boolean;
+}
+
+export interface GearItem {
+  id: string;
+  slot: 'WEAPON' | 'NEURAL_DECK' | 'CHASSIS' | 'RELIC';
+  name: string;
+  rarity: 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY' | 'MYTHIC';
+  cost: number;
+  description: string;
+  bonuses: string[];
+  isEquipped?: boolean;
+  isOwned?: boolean;
+  imageUrl?: string;
+}
+
+export interface SkillNode {
+  id: string;
+  title: string;
+  tier: number;
+  maxTier: number;
+  unlocked: boolean;
+  cost: number;
+  description: string;
+  icon: string;
+  category: 'CORE' | 'ATTACK' | 'DEFENSE' | 'FOCUS';
+}
+
+export interface AuditLog {
+  id: string;
+  action: string;
+  attribute: string;
+  xpGain: number;
+  multiplier: string;
+  timestamp: string;
+}
+
+export interface FireteamMember {
+  id: string;
+  name: string;
+  role: string;
+  damage: number;
+  isUser?: boolean;
+  avatarColor: string;
+}
+
+export interface RaidDirective {
+  id: string;
+  title: string;
+  description: string;
+  progress: number;
+  maxProgress: number;
+  rewardDamage: number;
+  completed: boolean;
+  isClaimed: boolean;
+}
+
+export interface WorldBossState {
+  name: string;
+  title: string;
+  currentHp: number;
+  maxHp: number;
+  timeLeft: string;
+  userStoredDamage: number;
+  globalParticipants: number;
+}
+
+export interface RadarStats {
+  str: number;
+  int: number;
+  sta: number;
+  agi: number;
+  syn: number;
+  void: number;
+}
+
+export interface HeroState {
+  id: string;
+  username: string;
+  classTitle: string;
+  specialization: string;
+  level: number;
+  hp: number;
+  maxHp: number;
+  xp: number;
+  nextLevelXp: number;
+  totalXp: number;
+  gold: number;
+  cyberShards: number;
+  streakCount: number;
+  unspentSkillPoints: number;
+  radar: RadarStats;
+  vitalityBonus: number;
+  surgeBonus: number;
+  strikeLatency: number;
+  isOverclocked: boolean;
 }

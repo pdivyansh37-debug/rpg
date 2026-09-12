@@ -2,74 +2,50 @@
 
 import React, { useState } from 'react';
 import { HeroHud } from '@/components/hero-hud';
-import { ShopView, ShopItem } from '@/components/shop-view';
-
-const INITIAL_SHOP_ITEMS: ShopItem[] = [
-  {
-    id: 'item-1',
-    name: 'Blade of Consistency',
-    description: 'A legendary badge commemorating a 7-day uninterrupted streak.',
-    cost: 250,
-    type: 'PROFILE_BADGE',
-    rarity: 'LEGENDARY',
-    isOwned: false,
-  },
-  {
-    id: 'item-2',
-    name: 'Cyberpunk Neon Cyberdeck Theme',
-    description: 'Custom UI color scheme drenched in radiant synthwave neon and deep blacks.',
-    cost: 500,
-    type: 'CUSTOM_THEME',
-    rarity: 'EPIC',
-    isOwned: false,
-  },
-  {
-    id: 'item-3',
-    name: 'Title: "Archmage of TypeScript"',
-    description: 'A glowing prestige title displayed beside your hero handle.',
-    cost: 150,
-    type: 'TITLE',
-    rarity: 'RARE',
-    isOwned: true,
-    isEquipped: true,
-  },
-  {
-    id: 'item-4',
-    name: 'Golden Crest Avatar Frame',
-    description: 'A shimmering animated border for your hero portrait.',
-    cost: 300,
-    type: 'AVATAR_COSMETIC',
-    rarity: 'RARE',
-    isOwned: false,
-  },
-  {
-    id: 'item-5',
-    name: 'Title: "Dawn Sentry"',
-    description: 'Awarded to heroes who consistently complete morning routines.',
-    cost: 100,
-    type: 'TITLE',
-    rarity: 'COMMON',
-    isOwned: false,
-  },
-];
+import { ArmoryBazaarView } from '@/components/armory-bazaar-view';
+import { CyberBottomNav } from '@/components/cyber-bottom-nav';
+import { useRouter } from 'next/navigation';
 
 export default function ShopPage() {
-  const [hero] = useState({
-    username: 'Alex the Coder',
-    level: 4,
-    currentXp: 340,
-    nextLevelXp: 800,
-    totalXp: 1240,
-    gold: 420,
-    streakCount: 5,
+  const [hero, setHero] = useState({
+    username: 'Nexus Operator',
+    level: 14,
+    currentXp: 3850,
+    nextLevelXp: 4000,
+    totalXp: 18450,
+    gold: 1420,
+    cyberShards: 48,
+    streakCount: 7,
   });
 
+  const router = useRouter();
+
   return (
-    <div>
-      <HeroHud hero={hero} />
-      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-        <ShopView items={INITIAL_SHOP_ITEMS} userGold={hero.gold} />
+    <div className="min-h-screen bg-[#070712] text-slate-100 font-sans pb-24 selection:bg-cyan-400 selection:text-slate-950">
+      <div className="border-b border-indigo-950/60 bg-[#06060f] px-4 py-1 text-center font-mono text-[11px] text-slate-400 tracking-wider">
+        HeroQuest: Cybernetic Bazaar & Arsenal
       </div>
+
+      <HeroHud hero={hero} />
+
+      <main className="mx-auto max-w-xl px-3 sm:px-4 py-4">
+        <ArmoryBazaarView
+          userGold={hero.gold}
+          userShards={hero.cyberShards}
+          onPurchaseItem={(cost) => {
+            setHero((h) => ({ ...h, gold: Math.max(0, h.gold - cost) }));
+          }}
+        />
+      </main>
+
+      <CyberBottomNav
+        activeTab="ARMORY"
+        onSelectTab={(tab) => {
+          if (tab === 'QUESTS') router.push('/');
+          if (tab === 'ATTRIBUTES') router.push('/character');
+          if (tab === 'BOSS') router.push('/');
+        }}
+      />
     </div>
   );
 }
