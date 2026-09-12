@@ -1,0 +1,189 @@
+// ============================================================================
+// Life RPG - Prisma Database Schema
+// Database & ORM: PostgreSQL with Prisma ORM (Supabase compatible)
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ----------------------------------------------------------------------------
+// ENUMS
+// ----------------------------------------------------------------------------
+
+enum QuestDifficulty {
+  TRIVIAL
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum AttributeType {
+  STRENGTH
+  INTELLECT
+  STAMINA
+  AGILITY
+}
+
+enum ItemType {
+  AVATAR_COSMETIC
+  PROFILE_BADGE
+  CUSTOM_THEME
+  TITLE
+}
+
+enum QuestStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  ARCHIVED
+}
+
+// ----------------------------------------------------------------------------
+// USER & CORE RPG PROFILE
+// ----------------------------------------------------------------------------
+
+model User {
+  id               String           @id @default(uuid())
+  authId           String           @unique @map("auth_id") // Supabase Auth User ID
+  username         String           @unique
+  email            String           @unique
+  avatarUrl        String?          @map("avatar_url")
+  
+  // Progression & Economy
+  level            Int              @default(1)
+  totalXp          Int              @default(0) @map("total_xp")
+  currentXp        Int              @default(0) @map("current_xp")       // XP progress in current level
+  nextLevelXp      Int              @default(100) @map("next_level_xp")  // XP threshold needed for next level
+  gold             Int              @default(50)
+  
+  // Streaks & Activity Tracking
+  streakCount      Int              @default(0) @map("streak_count")
+  longestStreak    Int              @default(0) @map("longest_streak")
+  lastActiveDate   DateTime?        @map("last_active_date")
+  
+  // Timestamps
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  attributes       UserAttribute?
+  quests           Quest[]
+  inventory        Inventory[]
+
+  @@index([authId])
+  @@index([level])
+  @@map("users")
+}
+
+// ----------------------------------------------------------------------------
+// USER HERO ATTRIBUTES / STATS
+// ----------------------------------------------------------------------------
+
+model UserAttribute {
+  id              String   @id @default(uuid())
+  userId          String   @unique @map("user_id")
+  
+  // Attribute Levels
+  strength        Int      @default(1)
+  intellect       Int      @default(1)
+  stamina         Int      @default(1)
+  agility         Int      @default(1)
+  
+  // Cumulative Attribute XP
+  strengthXp      Int      @default(0) @map("strength_xp")
+  intellectXp     Int      @default(0) @map("intellect_xp")
+  staminaXp       Int      @default(0) @map("stamina_xp")
+  agilityXp       Int      @default(0) @map("agility_xp")
+  
+  // Relation
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_attributes")
+}
+
+// ----------------------------------------------------------------------------
+// QUESTS (TASKS & HABITS)
+// ----------------------------------------------------------------------------
+
+model Quest {
+  id             String          @id @default(uuid())
+  userId         String          @map("user_id")
+  title          String          @db.VarChar(255)
+  description    String?         @db.Text
+  
+  // Gamified Parameters
+  difficulty     QuestDifficulty @default(EASY)
+  attributeType  AttributeType   @map("attribute_type")
+  xpReward       Int             @map("xp_reward")
+  goldReward     Int             @map("gold_reward")
+  
+  // Status & Schedule
+  status         QuestStatus     @default(PENDING)
+  completed      Boolean         @default(false)
+  completedAt    DateTime?       @map("completed_at")
+  dueDate        DateTime?       @map("due_date")
+  isRecurring    Boolean         @default(false) @map("is_recurring")
+  
+  // Timestamps
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  // Relation
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([userId, completed])
+  @@index([userId, dueDate])
+  @@map("quests")
+}
+
+// ----------------------------------------------------------------------------
+// VIRTUAL ECONOMY: SHOP ITEMS & REWARDS
+// ----------------------------------------------------------------------------
+
+model Item {
+  id             String      @id @default(uuid())
+  name           String      @unique @db.VarChar(100)
+  description    String      @db.Text
+  cost           Int
+  type           ItemType
+  rarity         String      @default("COMMON") // COMMON, RARE, EPIC, LEGENDARY
+  iconAsset      String      @map("icon_asset")
+  metadata       Json?       // CSS classes, cosmetic sprite URLs, theme tokens
+  isAvailable    Boolean     @default(true) @map("is_available")
+  
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  // Relation
+  inventoryItems Inventory[]
+
+  @@map("items")
+}
+
+// ----------------------------------------------------------------------------
+// INVENTORY & USER OWNERSHIP
+// ----------------------------------------------------------------------------
+
+model Inventory {
+  id             String      @id @default(uuid())
+  userId         String      @map("user_id")
+  itemId         String      @map("item_id")
+  isEquipped     Boolean     @default(false) @map("is_equipped")
+  purchasedAt    DateTime    @default(now()) @map("purchased_at")
+
+  // Relations
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item           Item        @relation(fields: [itemId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, itemId])
+  @@index([userId, isEquipped])
+  @@map("inventory")
+}
