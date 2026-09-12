@@ -1,6 +1,6 @@
 -- ============================================================================
 -- LIFE RPG: SUPABASE POSTGRESQL DATABASE SCHEMA & DATA ISOLATION
--- Project URL: https://vdozekkkbypwrbecauta.supabase.co
+-- Migration: 20260913000000_init_game_rpg_schema.sql
 -- ============================================================================
 
 -- Enable UUID extension
@@ -160,42 +160,6 @@ ALTER TABLE public.dailies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.todos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.inventory ENABLE ROW LEVEL SECURITY;
-
--- Drop any previous demo policies
-DROP POLICY IF EXISTS "Users can select own profile" ON public.users;
-DROP POLICY IF EXISTS "Users can insert own profile" ON public.users;
-DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
-
-DROP POLICY IF EXISTS "Users can select own attributes" ON public.user_attributes;
-DROP POLICY IF EXISTS "Users can insert own attributes" ON public.user_attributes;
-DROP POLICY IF EXISTS "Users can update own attributes" ON public.user_attributes;
-
-DROP POLICY IF EXISTS "Users can select own quests" ON public.quests;
-DROP POLICY IF EXISTS "Users can insert own quests" ON public.quests;
-DROP POLICY IF EXISTS "Users can update own quests" ON public.quests;
-DROP POLICY IF EXISTS "Users can delete own quests" ON public.quests;
-
-DROP POLICY IF EXISTS "Users can select own habits" ON public.habits;
-DROP POLICY IF EXISTS "Users can insert own habits" ON public.habits;
-DROP POLICY IF EXISTS "Users can update own habits" ON public.habits;
-DROP POLICY IF EXISTS "Users can delete own habits" ON public.habits;
-
-DROP POLICY IF EXISTS "Users can select own dailies" ON public.dailies;
-DROP POLICY IF EXISTS "Users can insert own dailies" ON public.dailies;
-DROP POLICY IF EXISTS "Users can update own dailies" ON public.dailies;
-DROP POLICY IF EXISTS "Users can delete own dailies" ON public.dailies;
-
-DROP POLICY IF EXISTS "Users can select own todos" ON public.todos;
-DROP POLICY IF EXISTS "Users can insert own todos" ON public.todos;
-DROP POLICY IF EXISTS "Users can update own todos" ON public.todos;
-DROP POLICY IF EXISTS "Users can delete own todos" ON public.todos;
-
-DROP POLICY IF EXISTS "Anyone can view items catalog" ON public.items;
-
-DROP POLICY IF EXISTS "Users can select own inventory" ON public.inventory;
-DROP POLICY IF EXISTS "Users can insert own inventory" ON public.inventory;
-DROP POLICY IF EXISTS "Users can update own inventory" ON public.inventory;
-DROP POLICY IF EXISTS "Users can delete own inventory" ON public.inventory;
 
 -- Users Isolation Policies
 CREATE POLICY "Users can select own profile" ON public.users FOR SELECT USING (auth.uid() = id OR auth.uid() IS NULL);
