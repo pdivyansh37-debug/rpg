@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Sparkles, Dices, Shield, Zap, RefreshCw, User, Cpu } from 'lucide-react';
 import { PixelAvatar, DEFAULT_AVATAR } from './pixel-avatar';
@@ -81,6 +81,12 @@ export const AvatarCustomizerModal: React.FC<AvatarCustomizerModalProps> = ({
 }) => {
   const [config, setConfig] = useState<AvatarConfig>({ ...DEFAULT_AVATAR, ...currentConfig });
   const [selectedAuraIndex, setSelectedAuraIndex] = useState(0);
+
+  useEffect(() => {
+    if (isOpen && currentConfig) {
+      setConfig({ ...DEFAULT_AVATAR, ...currentConfig });
+    }
+  }, [isOpen, currentConfig]);
 
   if (!isOpen) return null;
 

@@ -651,13 +651,39 @@ export default function MasterHeroQuestApp() {
 
       if (leveledUp) {
         setLevelUpData({
-          currentLevel: newLevel,
-          earnedXp,
-          earnedGold,
-          streakBonus: 5,
-          newStreak: h.streakCount,
-          levelUp: true,
-          nextLevelXp: newNextXp,
+          questId: habit.id,
+          questTitle: habit.title,
+          rewards: {
+            xp: earnedXp,
+            gold: earnedGold,
+            attributeXp: earnedXp,
+            attributeType: habit.attributeType || 'INTELLECT',
+          },
+          streak: {
+            count: h.streakCount,
+            bonusMultiplier: comboMultiplier,
+            isMaintained: true,
+          },
+          levelUp: {
+            didLevelUp: true,
+            oldLevel: h.level,
+            newLevel,
+            levelsGained: 1,
+          },
+          attributeLevelUp: {
+            didLevelUp: false,
+            attribute: habit.attributeType || 'INTELLECT',
+            oldLevel: 1,
+            newLevel: 1,
+          },
+          updatedHero: {
+            level: newLevel,
+            currentXp: newCurrentXp,
+            nextLevelXp: newNextXp,
+            totalXp: newTotalXp,
+            gold: h.gold + earnedGold,
+            streakCount: h.streakCount,
+          },
         });
         sound.playLevelUp();
       }
@@ -807,13 +833,39 @@ export default function MasterHeroQuestApp() {
               newNextXp = Math.round(newNextXp * 1.25);
               newHp = h.maxHp;
               setLevelUpData({
-                currentLevel: newLevel,
-                earnedXp,
-                earnedGold,
-                streakBonus: q.streakBonus || 5,
-                newStreak: h.streakCount,
-                levelUp: true,
-                nextLevelXp: newNextXp,
+                questId: q.id,
+                questTitle: q.title,
+                rewards: {
+                  xp: earnedXp,
+                  gold: earnedGold,
+                  attributeXp: earnedXp,
+                  attributeType: q.attributeType || 'INTELLECT',
+                },
+                streak: {
+                  count: h.streakCount,
+                  bonusMultiplier: comboMultiplier,
+                  isMaintained: true,
+                },
+                levelUp: {
+                  didLevelUp: true,
+                  oldLevel: h.level,
+                  newLevel,
+                  levelsGained: 1,
+                },
+                attributeLevelUp: {
+                  didLevelUp: false,
+                  attribute: q.attributeType || 'INTELLECT',
+                  oldLevel: 1,
+                  newLevel: 1,
+                },
+                updatedHero: {
+                  level: newLevel,
+                  currentXp: newCurrentXp,
+                  nextLevelXp: newNextXp,
+                  totalXp: newTotalXp,
+                  gold: h.gold + earnedGold,
+                  streakCount: h.streakCount,
+                },
               });
               sound.playLevelUp();
             }

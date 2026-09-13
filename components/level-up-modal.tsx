@@ -7,7 +7,7 @@ import { QuestCompletionData } from '@/actions/quest-actions';
 import { sound } from '@/lib/sound';
 
 interface LevelUpModalProps {
-  data: QuestCompletionData | null;
+  data: QuestCompletionData | Record<string, any> | null;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -18,6 +18,19 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
   onClose,
 }) => {
   if (!data || !isOpen) return null;
+
+  const d = data as any;
+  const oldLevel =
+    d?.levelUp?.oldLevel ??
+    (d?.currentLevel ? Math.max(1, d.currentLevel - 1) : 1);
+  const newLevel =
+    d?.levelUp?.newLevel ?? d?.currentLevel ?? 2;
+  const gainedXp =
+    d?.rewards?.xp ?? d?.earnedXp ?? 0;
+  const gainedGold =
+    d?.rewards?.gold ?? d?.earnedGold ?? 0;
+  const hasAttrLevelUp =
+    Boolean(d?.attributeLevelUp?.didLevelUp);
 
   return (
     <AnimatePresence>
@@ -88,7 +101,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
               <div className="flex flex-col items-center">
                 <span className="text-[10px] text-slate-400">Previous</span>
                 <span className="text-2xl font-black text-slate-400">
-                  LV.{data.levelUp.oldLevel}
+                  LV.{oldLevel}
                 </span>
               </div>
 
@@ -97,7 +110,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
               <div className="flex flex-col items-center">
                 <span className="text-[10px] font-bold text-cyan-400">New Rank</span>
                 <span className="text-3xl font-black text-cyan-300 drop-shadow-[0_0_12px_rgba(0,240,255,0.8)]">
-                  LV.{data.levelUp.newLevel}
+                  LV.{newLevel}
                 </span>
               </div>
             </motion.div>
@@ -114,7 +127,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
                   <Sparkles className="w-4 h-4 text-cyan-400" /> Synapse XP Gained
                 </span>
                 <span className="font-bold text-cyan-300 text-sm">
-                  +{data.rewards.xp} XP
+                  +{gainedXp} XP
                 </span>
               </div>
 
@@ -123,15 +136,15 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
                   <span>🪙</span> Bounty Received
                 </span>
                 <span className="font-bold text-amber-300 text-sm">
-                  +{data.rewards.gold} Gold
+                  +{gainedGold} Gold
                 </span>
               </div>
 
-              {data.attributeLevelUp.didLevelUp && (
+              {hasAttrLevelUp && (
                 <div className="mt-2 pt-2 border-t border-indigo-950 flex justify-between items-center text-pink-400 font-bold">
-                  <span>{data.attributeLevelUp.attribute} Tier Upgraded!</span>
+                  <span>{data?.attributeLevelUp?.attribute} Tier Upgraded!</span>
                   <span>
-                    Lv. {data.attributeLevelUp.oldLevel} → Lv. {data.attributeLevelUp.newLevel}
+                    Lv. {data?.attributeLevelUp?.oldLevel} → Lv. {data?.attributeLevelUp?.newLevel}
                   </span>
                 </div>
               )}

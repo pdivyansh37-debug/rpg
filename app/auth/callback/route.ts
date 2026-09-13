@@ -8,6 +8,12 @@ export async function GET(request: Request) {
     const code = searchParams.get('code');
     const next = searchParams.get('next') ?? '/';
 
+    const forwardedHost = request.headers.get('x-forwarded-host');
+    const forwardedProto = request.headers.get('x-forwarded-proto') || 'https';
+    const effectiveOrigin = forwardedHost
+      ? `${forwardedProto}://${forwardedHost}`
+      : origin;
+
     if (code) {
       const cookieStore = await cookies();
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://vdozekkkbypwrbecauta.supabase.co';
@@ -39,14 +45,14 @@ export async function GET(request: Request) {
 
       const { error } = await supabase.auth.exchangeCodeForSession(code);
       if (!error) {
-        return NextResponse.redirect(`${origin}${next}`);
+        return NextResponse.redirect(`${effectiveOrigin}${next}`);
       }
     }
 
-    return NextResponse.redirect(`${origin}${next}`);
+    return NextResponse.redirect(`${effectiveOrigin}${next}`);
   } catch (err) {
     console.error('Auth callback error:', err);
-    const fallbackOrigin = typeof request?.url === 'string' ? new URL(request.url).origin : '/';
-    return NextResponse.redirect(`${fallbackOrigin}/`);
+    return NextResponse.redirect(new URL('/', request.url));
   }
 }
+
